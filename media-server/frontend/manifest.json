@@ -1,0 +1,21 @@
+{
+    "short_name": "NAS Player",
+    "name": "Home NAS Music Player",
+    "icons": [
+      {
+        "src": "https://placehold.co/192x192/1db954/ffffff?text=Music",
+        "type": "image/png",
+        "sizes": "192x192"
+      },
+      {
+        "src": "https://placehold.co/512x512/512x512/1db954/ffffff?text=Music",
+        "type": "image/png",
+        "sizes": "512x512"
+      }
+    ],
+    "start_url": ".",
+    "background_color": "#121212",
+    "theme_color": "#1db954",
+    "display": "standalone",
+    "orientation": "portrait"
+  }

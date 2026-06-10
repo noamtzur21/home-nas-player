@@ -1,0 +1,11 @@
+{
+  "name": "spotify-youtube-proxy",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix media-server/backend\" \"npm run dev --prefix media-server/frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

@@ -1,0 +1,76 @@
+.add-track-panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 22px;
+  backdrop-filter: blur(12px);
+}
+
+.add-track-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.add-track-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+}
+
+.add-track-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.92rem;
+}
+
+.add-track-form {
+  display: grid;
+  gap: 14px;
+}
+
+.add-track-form label {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.9rem;
+}
+
+.add-track-form input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  border-radius: 12px;
+  padding: 13px 16px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.primary-btn,
+.ghost-btn {
+  border: 0;
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 12px 18px;
+}
+
+.primary-btn {
+  background: #1db954;
+  color: #000;
+}
+
+.ghost-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.form-error {
+  margin: 0;
+  color: #ff8080;
+  font-size: 0.88rem;
+}

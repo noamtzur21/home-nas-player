@@ -1,0 +1,94 @@
+import { useEffect, useState } from "react";
+
+const STORAGE_KEY = "media-server-playlist";
+
+const DEFAULT_ARTWORK =
+  "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80";
+
+export function createTrack({ title, artist, sourceUrl, streamId, artwork }) {
+  return {
+    id: crypto.randomUUID(),
+    title: title.trim(),
+    artist: artist.trim(),
+    sourceUrl: sourceUrl?.trim() || null,
+    streamId: streamId?.trim() || null,
+    artwork: artwork || DEFAULT_ARTWORK,
+    createdAt: Date.now(),
+  };
+}
+
+function loadPlaylist() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePlaylist(tracks) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tracks));
+}
+
+export function usePlaylist() {
+  const [tracks, setTracks] = useState(loadPlaylist);
+
+  useEffect(() => {
+    savePlaylist(tracks);
+  }, [tracks]);
+
+  const addTrack = ({ title, artist, sourceUrl, streamId, artwork }) => {
+    const trimmedTitle = title.trim();
+    const trimmedArtist = artist.trim();
+    const trimmedUrl = sourceUrl?.trim() || "";
+    const trimmedStreamId = streamId?.trim() || "";
+
+    if (!trimmedTitle || !trimmedArtist) {
+      return { ok: false, error: "Title and artist are required." };
+    }
+
+    if (!trimmedUrl && !trimmedStreamId) {
+      return { ok: false, error: "A media URL or stream id is required." };
+    }
+
+    if (trimmedUrl) {
+      try {
+        const parsed = new URL(trimmedUrl);
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+          return { ok: false, error: "URL must start with http:// or https://" };
+        }
+      } catch {
+        return { ok: false, error: "Please enter a valid URL." };
+      }
+    }
+
+    const alreadySaved = tracks.some(
+      (track) =>
+        (trimmedStreamId && track.streamId === trimmedStreamId) ||
+        (trimmedUrl && track.sourceUrl === trimmedUrl)
+    );
+
+    if (alreadySaved) {
+      return { ok: false, error: "This track is already in your playlist." };
+    }
+
+    const track = createTrack({
+      title: trimmedTitle,
+      artist: trimmedArtist,
+      sourceUrl: trimmedUrl || null,
+      streamId: trimmedStreamId || null,
+      artwork,
+    });
+
+    setTracks((current) => [track, ...current]);
+    return { ok: true, track };
+  };
+
+  const removeTrack = (id) => {
+    setTracks((current) => current.filter((track) => track.id !== id));
+  };
+
+  return { tracks, addTrack, removeTrack };
+}
