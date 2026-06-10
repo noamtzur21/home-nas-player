@@ -11,9 +11,15 @@ import { searchResultToTrack } from "./utils/stream.js";
 import "./App.css";
 
 export default function App() {
-  const { tracks, addTrack, removeTrack } = usePlaylist();
+  // חילצנו פה את פונקציית ההורדה ואת הסטוסים של הטעינה לאופליין מההוק המעודכן
+  const { 
+    tracks, 
+    addTrack, 
+    removeTrack, 
+    downloadTrack, 
+    downloadingIds 
+  } = usePlaylist();
   
-  // חילצנו פה את המשתנים החדשים שמובילים את פונקציונליות ה-Show More
   const {
     query,
     setQuery,
@@ -21,9 +27,9 @@ export default function App() {
     isSearching,
     error: searchError,
     lastQuery,
-    hasMore,    // משתנה בוליאני חדש מההוק
+    hasMore,
     runSearch,
-    loadMore,   // פונקציית הטעינה החדשה מההוק
+    loadMore,
   } = useSearch();
 
   const [activeTrack, setActiveTrack] = useState(null);
@@ -44,22 +50,22 @@ export default function App() {
     setIsPlaying(shouldAutoPlay);
   }, []);
 
-  const handleAddTrack = (values) => {
+  const handleAddTrack = useCallback((values) => {
     const result = addTrack(values);
     if (result.ok) {
       setPlaylistMessage("");
       selectTrack(result.track, { shouldAutoPlay: true });
     }
     return result;
-  };
+  }, [addTrack, selectTrack]);
 
-  const handleRemoveTrack = (id) => {
+  const handleRemoveTrack = useCallback((id) => {
     removeTrack(id);
     if (activeTrack?.id === id) {
       setActiveTrack(null);
       setIsPlaying(false);
     }
-  };
+  }, [removeTrack, activeTrack?.id]);
 
   const handlePlaySearchResult = useCallback(
     (result) => {
@@ -130,7 +136,6 @@ export default function App() {
           isSearching={isSearching}
         />
 
-        {/* העברנו פה בצורה נקייה את הפרופס התומכים לתוך רכיב התוצאות המקורי */}
         <SearchResults
           query={lastQuery}
           results={results}
@@ -156,10 +161,13 @@ export default function App() {
           </button>
         )}
 
+        {/* הזרקנו פה בצורה מלאה את הפרופס התומכים בהורדה לתוך רשימת השירים */}
         <TrackList
           tracks={tracks}
           activeTrackId={activeTrack?.id}
           onSelectTrack={(track) => selectTrack(track)}
+          downloadTrack={downloadTrack}
+          downloadingIds={downloadingIds}
         />
       </main>
 
