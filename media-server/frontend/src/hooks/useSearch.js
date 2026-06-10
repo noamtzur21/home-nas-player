@@ -1,5 +1,8 @@
 import { useState } from "react";
 
+// הכתובת הרשמית של השרת שלך ב-Render
+const BACKEND_URL = "https://media-server-backend-qqjx.onrender.com";
+
 export function useSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -25,7 +28,8 @@ export function useSearch() {
 
     try {
       const params = new URLSearchParams({ q: trimmed, page: "1" });
-      const response = await fetch(`http://localhost:3001/search?${params.toString()}`);
+      // פנייה ישירה לשרת בענן במקום ל-localhost
+      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`);
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
@@ -55,7 +59,8 @@ export function useSearch() {
 
     try {
       const params = new URLSearchParams({ q: lastQuery, page: nextPage.toString() });
-      const response = await fetch(`http://localhost:3001/search?${params.toString()}`);
+      // פנייה ישירה לשרת בענן במקום ל-localhost
+      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`);
 
       if (!response.ok) throw new Error("Failed to load more results.");
 
