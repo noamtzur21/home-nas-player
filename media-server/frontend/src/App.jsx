@@ -1,13 +1,16 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import AddTrackForm from "./components/AddTrackForm.jsx";
 import AudioPlayer from "./components/AudioPlayer.jsx";
 import SearchBar from "./components/SearchBar.jsx";
 import SearchResults from "./components/SearchResults.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import TrackList from "./components/TrackList.jsx";
+import { useAudioPlayback } from "./hooks/useAudioPlayback.js";
 import { usePlaylist } from "./hooks/usePlaylist.js";
 import { useSearch } from "./hooks/useSearch.js";
 import { searchResultToTrack } from "./utils/stream.js";
+import { debugLog, isDebugEnabled } from "./utils/debugLog.js";
+import DebugPanel from "./components/DebugPanel.jsx";
 import "./App.css";
 
 export default function App() {
@@ -32,6 +35,8 @@ export default function App() {
     loadMore,
   } = useSearch();
 
+  const { audioRef, playTrackWithGesture } = useAudioPlayback();
+
   const [activeTrack, setActiveTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAddForm, setShowAddForm] = useState(true);
@@ -45,16 +50,23 @@ export default function App() {
   const hasPrevious = activeIndex > 0;
   const hasNext = activeIndex >= 0 && activeIndex < tracks.length - 1;
 
-  const selectTrack = useCallback((track, { shouldAutoPlay = false } = {}) => {
+  const selectTrack = useCallback(async (track, { shouldAutoPlay = false } = {}) => {
     setActiveTrack(track);
-    setIsPlaying(shouldAutoPlay);
-  }, []);
 
-  const handleAddTrack = useCallback((values) => {
+    if (!shouldAutoPlay) {
+      setIsPlaying(false);
+      return;
+    }
+
+    const { ok } = await playTrackWithGesture(track);
+    setIsPlaying(ok);
+  }, [playTrackWithGesture]);
+
+  const handleAddTrack = useCallback(async (values) => {
     const result = addTrack(values);
     if (result.ok) {
       setPlaylistMessage("");
-      selectTrack(result.track, { shouldAutoPlay: true });
+      await selectTrack(result.track, { shouldAutoPlay: true });
     }
     return result;
   }, [addTrack, selectTrack]);
@@ -68,8 +80,8 @@ export default function App() {
   }, [removeTrack, activeTrack?.id]);
 
   const handlePlaySearchResult = useCallback(
-    (result) => {
-      selectTrack(searchResultToTrack(result), { shouldAutoPlay: true });
+    async (result) => {
+      await selectTrack(searchResultToTrack(result), { shouldAutoPlay: true });
     },
     [selectTrack]
   );
@@ -92,14 +104,14 @@ export default function App() {
     [addTrack]
   );
 
-  const goToPrevious = useCallback(() => {
+  const goToPrevious = useCallback(async () => {
     if (!hasPrevious) return;
-    selectTrack(tracks[activeIndex - 1], { shouldAutoPlay: true });
+    await selectTrack(tracks[activeIndex - 1], { shouldAutoPlay: true });
   }, [activeIndex, hasPrevious, selectTrack, tracks]);
 
-  const goToNext = useCallback(() => {
+  const goToNext = useCallback(async () => {
     if (!hasNext) return;
-    selectTrack(tracks[activeIndex + 1], { shouldAutoPlay: true });
+    await selectTrack(tracks[activeIndex + 1], { shouldAutoPlay: true });
   }, [activeIndex, hasNext, selectTrack, tracks]);
 
   const handleTrackEnded = useCallback(() => {
@@ -110,12 +122,22 @@ export default function App() {
     }
   }, [goToNext, hasNext]);
 
+  useEffect(() => {
+    debugLog("info", "App mounted", {
+      debug: isDebugEnabled(),
+      ua: navigator.userAgent,
+      prod: import.meta.env.PROD,
+    });
+  }, []);
+
   return (
-    <div className="app-shell" style={{ paddingBottom: activeTrack ? '110px' : '0' }}>
+    <div className={`app-shell${activeTrack ? " app-shell--with-player" : ""}${isDebugEnabled() ? " app-shell--debug" : ""}`}>
+      <DebugPanel />
+      <audio ref={audioRef} playsInline preload="auto" className="global-audio" aria-hidden="true" />
       <Sidebar
         tracks={tracks}
         activeTrackId={activeTrack?.id}
-        onSelectTrack={(track) => selectTrack(track)}
+        onSelectTrack={(track) => selectTrack(track, { shouldAutoPlay: true })}
         onRemoveTrack={handleRemoveTrack}
         onAddClick={() => setShowAddForm(true)}
       />
@@ -165,7 +187,7 @@ export default function App() {
         <TrackList
           tracks={tracks}
           activeTrackId={activeTrack?.id}
-          onSelectTrack={(track) => selectTrack(track)}
+          onSelectTrack={(track) => selectTrack(track, { shouldAutoPlay: true })}
           downloadTrack={downloadTrack}
           downloadingIds={downloadingIds}
         />
@@ -174,6 +196,7 @@ export default function App() {
       {activeTrack ? (
         <AudioPlayer
           key={activeTrack.streamId || activeTrack.id}
+          audioRef={audioRef}
           currentTrack={activeTrack}
           isPlaying={isPlaying}
           setIsPlaying={setIsPlaying}

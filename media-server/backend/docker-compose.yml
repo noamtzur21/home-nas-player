@@ -1,0 +1,13 @@
+services:
+  media-server-backend:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - PUBLIC_BACKEND_URL=http://localhost:3001
+    volumes:
+      - stream-cache:/app/cache
+
+volumes:
+  stream-cache:

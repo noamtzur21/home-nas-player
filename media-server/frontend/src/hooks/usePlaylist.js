@@ -66,8 +66,9 @@ export function usePlaylist() {
     if (track.isDownloaded) return;
     setDownloadingIds(current => new Set([...current, track.id]));
 
+    const streamEndpoint = import.meta.env.DEV ? "/stream" : "/api/stream";
     const params = new URLSearchParams(track.streamId ? { id: track.streamId } : { url: track.sourceUrl });
-    const streamUrl = `/stream?${params.toString()}`;
+    const streamUrl = `${streamEndpoint}?${params.toString()}`;
 
     const success = await downloadTrackToDevice(track.id, streamUrl);
 

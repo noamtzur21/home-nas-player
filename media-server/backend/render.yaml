@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: media-server-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_BACKEND_URL
+        sync: false
