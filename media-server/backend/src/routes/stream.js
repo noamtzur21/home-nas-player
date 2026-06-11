@@ -1,12 +1,16 @@
-import { execSync, spawnSync } from "child_process";
+import { spawnSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { Innertube } from "youtubei.js";
 import { resolveStreamUrlById } from "../data/mockCatalog.js";
 
+export const STREAM_HANDLER_VERSION = "2026-06-11-direct-redirect";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = process.env.CACHE_DIR || path.join(__dirname, "../../cache");
+const PLAYER_CLIENTS = ["web", "android,web", "ios"];
+const YT_DLP_TIMEOUT_MS = 180000;
 
 if (!fs.existsSync(CACHE_DIR)) {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
@@ -17,18 +21,80 @@ function hasYtDlp() {
   return result.status === 0;
 }
 
-const YT_DLP_ARGS =
-  '--no-playlist -x --audio-format mp3 --audio-quality 5 --extractor-args "youtube:player_client=android,web"';
-
-function downloadWithYtDlp(streamId) {
-  const videoUrl = `https://www.youtube.com/watch?v=${streamId}`;
-  const outputTemplate = path.join(CACHE_DIR, `${streamId}.%(ext)s`);
-  execSync(`yt-dlp ${YT_DLP_ARGS} -o "${outputTemplate}" "${videoUrl}"`, {
-    stdio: "pipe",
+function runYtDlp(args) {
+  return spawnSync("yt-dlp", args, {
     encoding: "utf8",
-    timeout: 180000,
+    timeout: YT_DLP_TIMEOUT_MS,
     maxBuffer: 20 * 1024 * 1024,
   });
+}
+
+function videoUrlFor(streamId) {
+  return `https://www.youtube.com/watch?v=${streamId}`;
+}
+
+export function resolveDirectStreamUrl(streamId) {
+  if (!hasYtDlp()) return null;
+
+  const videoUrl = videoUrlFor(streamId);
+
+  for (const playerClient of PLAYER_CLIENTS) {
+    const result = runYtDlp([
+      "-f",
+      "bestaudio/best",
+      "--no-playlist",
+      "--extractor-args",
+      `youtube:player_client=${playerClient}`,
+      "-g",
+      videoUrl,
+    ]);
+
+    if (result.status !== 0) {
+      console.warn(
+        `[stream] yt-dlp -g failed for ${streamId} (${playerClient}):`,
+        (result.stderr || result.stdout || "").trim().slice(0, 200)
+      );
+      continue;
+    }
+
+    const lines = result.stdout.trim().split("\n").filter(Boolean);
+    const url = lines.at(-1);
+    if (url?.startsWith("http")) {
+      console.log(`[stream] Direct CDN URL resolved for ${streamId} via ${playerClient}`);
+      return url;
+    }
+  }
+
+  return null;
+}
+
+function downloadWithYtDlp(streamId) {
+  const videoUrl = videoUrlFor(streamId);
+  const outputTemplate = path.join(CACHE_DIR, `${streamId}.%(ext)s`);
+  let lastError = "yt-dlp download failed";
+
+  for (const playerClient of PLAYER_CLIENTS) {
+    const result = runYtDlp([
+      "--no-playlist",
+      "-x",
+      "--audio-format",
+      "mp3",
+      "--audio-quality",
+      "5",
+      "--extractor-args",
+      `youtube:player_client=${playerClient}`,
+      "-o",
+      outputTemplate,
+      videoUrl,
+    ]);
+
+    if (result.status === 0) return;
+
+    lastError = (result.stderr || result.stdout || lastError).trim();
+    console.warn(`[stream] yt-dlp download failed for ${streamId} (${playerClient})`);
+  }
+
+  throw new Error(lastError);
 }
 
 async function downloadWithYoutubei(streamId) {
@@ -72,7 +138,7 @@ async function ensureCachedAudio(streamId) {
       const cached = findCachedFile(streamId);
       if (cached) return cached;
     } catch (error) {
-      console.error(`[stream] yt-dlp failed for ${streamId}:`, error.stderr || error.message);
+      console.error(`[stream] yt-dlp failed for ${streamId}:`, error.message);
     }
   }
 
@@ -120,9 +186,22 @@ export async function resolveStream(req, res) {
       return res.status(400).json({ error: "Missing stream id" });
     }
 
-    const filePath = await ensureCachedAudio(streamId);
+    const cached = findCachedFile(streamId);
     const backendBase = process.env.PUBLIC_BACKEND_URL || `http://localhost:${process.env.PORT || 3001}`;
 
+    if (cached) {
+      return res.json({
+        url: `${backendBase}/stream?id=${streamId}`,
+        source: "backend-cache",
+      });
+    }
+
+    const directUrl = resolveDirectStreamUrl(streamId);
+    if (directUrl) {
+      return res.json({ url: directUrl, source: "youtube-cdn" });
+    }
+
+    await ensureCachedAudio(streamId);
     return res.json({
       url: `${backendBase}/stream?id=${streamId}`,
       source: "backend-cache",
@@ -138,6 +217,12 @@ export async function streamProxy(req, res) {
     const streamId = req.query.id;
 
     if (streamId && !streamId.startsWith("mock-")) {
+      const cached = findCachedFile(streamId);
+      if (cached) return serveCachedFile(req, res, cached);
+
+      const directUrl = resolveDirectStreamUrl(streamId);
+      if (directUrl) return res.redirect(302, directUrl);
+
       const filePath = await ensureCachedAudio(streamId);
       return serveCachedFile(req, res, filePath);
     }
