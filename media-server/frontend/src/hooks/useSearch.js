@@ -24,11 +24,11 @@ export function useSearch() {
     setError("");
     setPage(1);
 
+    const params = new URLSearchParams({ q: trimmed, page: "1" });
+    const targetUrl = `${BACKEND_URL}/search?${params.toString()}`;
+
     try {
-      const params = new URLSearchParams({ q: trimmed, page: "1" });
-      
-      // הוספנו הגדרות CORS מפורשות כדי שהאייפון לא יחסום את הבקשה ביציאה
-      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`, {
+      const response = await fetch(targetUrl, {
         method: "GET",
         mode: "cors",
         headers: {
@@ -38,7 +38,7 @@ export function useSearch() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
-        throw new Error(payload.error || `Search failed with ${response.status}`);
+        throw new Error(payload.error || `Server returned status ${response.status}`);
       }
 
       const payload = await response.json();
@@ -49,7 +49,8 @@ export function useSearch() {
     } catch (searchError) {
       setResults([]);
       setHasMore(false);
-      setError(searchError.message || "Search failed.");
+      // מציג על המסך באייפון את השגיאה הפיזית האמיתית
+      setError(`Error: ${searchError.message} | URL: ${targetUrl}`);
     } finally {
       setIsSearching(false);
     }
@@ -60,11 +61,11 @@ export function useSearch() {
 
     const nextPage = page + 1;
     setIsSearching(true);
+    const params = new URLSearchParams({ q: lastQuery, page: nextPage.toString() });
+    const targetUrl = `${BACKEND_URL}/search?${params.toString()}`;
 
     try {
-      const params = new URLSearchParams({ q: lastQuery, page: nextPage.toString() });
-      
-      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`, {
+      const response = await fetch(targetUrl, {
         method: "GET",
         mode: "cors",
         headers: {
@@ -81,7 +82,7 @@ export function useSearch() {
       setPage(nextPage);
       setHasMore(payload.hasMore || false);
     } catch (searchError) {
-      setError(searchError.message || "Failed to load more tracks.");
+      setError(`LoadMore Error: ${searchError.message} | URL: ${targetUrl}`);
     } finally {
       setIsSearching(false);
     }
