@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-// הכתובת הרשמית של השרת שלך ב-Render
 const BACKEND_URL = "https://media-server-backend-qqjx.onrender.com";
 
 export function useSearch() {
@@ -12,7 +11,6 @@ export function useSearch() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  // חיפוש ראשוני (עמוד 1)
   const runSearch = async (searchQuery) => {
     const trimmed = searchQuery.trim();
     if (!trimmed) {
@@ -24,12 +22,19 @@ export function useSearch() {
 
     setIsSearching(true);
     setError("");
-    setPage(1); // מאפסים לעמוד הראשון
+    setPage(1);
 
     try {
       const params = new URLSearchParams({ q: trimmed, page: "1" });
-      // פנייה ישירה לשרת בענן במקום ל-localhost
-      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`);
+      
+      // הוספנו הגדרות CORS מפורשות כדי שהאייפון לא יחסום את הבקשה ביציאה
+      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`, {
+        method: "GET",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
 
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
@@ -50,7 +55,6 @@ export function useSearch() {
     }
   };
 
-  // טעינת עמודים נוספים (לחיצה על Show More)
   const loadMore = async () => {
     if (isSearching || !hasMore || !lastQuery) return;
 
@@ -59,15 +63,20 @@ export function useSearch() {
 
     try {
       const params = new URLSearchParams({ q: lastQuery, page: nextPage.toString() });
-      // פנייה ישירה לשרת בענן במקום ל-localhost
-      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`);
+      
+      const response = await fetch(`${BACKEND_URL}/search?${params.toString()}`, {
+        method: "GET",
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/json",
+        }
+      });
 
       if (!response.ok) throw new Error("Failed to load more results.");
 
       const payload = await response.json();
       const newTracks = Array.isArray(payload.results) ? payload.results : [];
 
-      // משרשרים את השירים החדשים לקצה של המערך הקיים!
       setResults((prev) => [...prev, ...newTracks]);
       setPage(nextPage);
       setHasMore(payload.hasMore || false);
