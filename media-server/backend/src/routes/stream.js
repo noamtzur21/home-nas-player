@@ -17,17 +17,18 @@ function hasYtDlp() {
   return result.status === 0;
 }
 
+const YT_DLP_ARGS =
+  '--no-playlist -x --audio-format mp3 --audio-quality 5 --extractor-args "youtube:player_client=android,web"';
+
 function downloadWithYtDlp(streamId) {
   const videoUrl = `https://www.youtube.com/watch?v=${streamId}`;
   const outputTemplate = path.join(CACHE_DIR, `${streamId}.%(ext)s`);
-  execSync(
-    `yt-dlp --no-playlist -x --audio-format mp3 --audio-quality 5 -o "${outputTemplate}" "${videoUrl}"`,
-    {
-      stdio: "inherit",
-      timeout: 180000,
-      maxBuffer: 20 * 1024 * 1024,
-    }
-  );
+  execSync(`yt-dlp ${YT_DLP_ARGS} -o "${outputTemplate}" "${videoUrl}"`, {
+    stdio: "pipe",
+    encoding: "utf8",
+    timeout: 180000,
+    maxBuffer: 20 * 1024 * 1024,
+  });
 }
 
 async function downloadWithYoutubei(streamId) {
@@ -65,10 +66,14 @@ async function ensureCachedAudio(streamId) {
   if (existing) return existing;
 
   if (hasYtDlp()) {
-    console.log(`[stream] Downloading ${streamId} with yt-dlp…`);
-    downloadWithYtDlp(streamId);
-    const cached = findCachedFile(streamId);
-    if (cached) return cached;
+    try {
+      console.log(`[stream] Downloading ${streamId} with yt-dlp…`);
+      downloadWithYtDlp(streamId);
+      const cached = findCachedFile(streamId);
+      if (cached) return cached;
+    } catch (error) {
+      console.error(`[stream] yt-dlp failed for ${streamId}:`, error.stderr || error.message);
+    }
   }
 
   console.log(`[stream] Downloading ${streamId} with youtubei.js…`);

@@ -22,7 +22,7 @@ export async function searchTracks(req, res) {
 
             try {
                 // פקודה שמבקשת מיוטיוב את 100 התוצאות הראשונות בפורמט JSON מהיר בלי להוריד כלום
-                const command = `yt-dlp "ytsearch100:${query}" --dump-json --flat-playlist`;
+                const command = `yt-dlp "ytsearch100:${query}" --dump-json --flat-playlist --extractor-args "youtube:player_client=android,web"`;
                 const output = execSync(command, { maxBuffer: 10 * 1024 * 1024 }).toString();
                 
                 // הפיכת הפלט לשורות JSON נפרדות
