@@ -4,8 +4,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { Innertube } from "youtubei.js";
 import { resolveStreamUrlById } from "../data/mockCatalog.js";
+import { getYtDlpExtraArgs } from "../ytdlpConfig.js";
 
-export const STREAM_HANDLER_VERSION = "2026-06-11-direct-redirect";
+export const STREAM_HANDLER_VERSION = "2026-06-11-cookies-deno";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = process.env.CACHE_DIR || path.join(__dirname, "../../cache");
@@ -22,7 +23,7 @@ function hasYtDlp() {
 }
 
 function runYtDlp(args) {
-  return spawnSync("yt-dlp", args, {
+  return spawnSync("yt-dlp", [...getYtDlpExtraArgs(), ...args], {
     encoding: "utf8",
     timeout: YT_DLP_TIMEOUT_MS,
     maxBuffer: 20 * 1024 * 1024,

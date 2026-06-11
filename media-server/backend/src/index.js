@@ -4,6 +4,9 @@ import cors from "cors";
 import express from "express";
 import { searchTracks } from "./routes/search.js";
 import { resolveStream, streamProxy, STREAM_HANDLER_VERSION } from "./routes/stream.js";
+import { getCookiesPath, hasYtDlpCookies, initYtDlpCookies } from "./ytdlpConfig.js";
+
+initYtDlpCookies();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -18,6 +21,8 @@ app.get("/health", (_req, res) => {
     version: STREAM_HANDLER_VERSION,
     ytDlp: ytdlp.status === 0 ? ytdlp.stdout.trim() : null,
     cacheDir: process.env.CACHE_DIR || "default",
+    cookiesConfigured: hasYtDlpCookies(),
+    cookiesPath: getCookiesPath() || null,
   });
 });
 

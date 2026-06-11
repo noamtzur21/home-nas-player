@@ -11,7 +11,7 @@ async function resolveViaBackend(id) {
     if (response.ok) {
       const data = await response.json();
       if (data.url) {
-        return { url: data.url, source: "backend-resolve" };
+        return { url: data.url, source: data.source || "backend-resolve" };
       }
     }
   } catch (error) {
@@ -46,13 +46,12 @@ export default async function handler(req, res) {
   try {
     const backendResult = await resolveViaBackend(id);
     if (backendResult?.url) {
-      console.log("[stream] Using backend for", id);
       return res.status(200).json(backendResult);
     }
 
     return res.status(502).json({
       error: "Stream backend not configured",
-      hint: "Set STREAM_BACKEND_URL in Vercel to your Render/Mac backend URL",
+      hint: "Set STREAM_BACKEND_URL in Vercel to https://media-server-backend-lwi0.onrender.com",
     });
   } catch (error) {
     console.error("Stream error:", error.message);
