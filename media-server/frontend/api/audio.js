@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import { resolveFromYoutubei } from "../lib/resolveStream.js";
+import { resolveFromCobalt, resolveFromYoutubei } from "../lib/resolveStream.js";
 
 const IOS_USER_AGENT =
   "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)";
@@ -19,7 +19,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { url: upstreamUrl } = await resolveFromYoutubei(id);
+    let resolved;
+    try {
+      resolved = await resolveFromCobalt(id);
+    } catch (cobaltErr) {
+      console.warn("[audio] Cobalt failed, trying youtubei:", cobaltErr.message);
+      resolved = await resolveFromYoutubei(id);
+    }
+    const { url: upstreamUrl } = resolved;
     const headers = { "User-Agent": IOS_USER_AGENT };
     if (req.headers.range) headers.Range = req.headers.range;
 

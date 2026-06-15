@@ -50,6 +50,20 @@ async function downloadViaYoutubei(videoId) {
   return readStreamToBlob(stream, "audio/mp4");
 }
 
+async function downloadViaRenderBackend(videoId) {
+  const backendUrl =
+    import.meta.env.VITE_STREAM_BACKEND_URL || "https://media-server-backend-lwi0.onrender.com";
+  debugLog("info", "Downloading via Render backend (yt-dlp)", { videoId, backendUrl });
+  const response = await fetch(`${backendUrl}/stream?id=${encodeURIComponent(videoId)}`, {
+    signal: AbortSignal.timeout(120000),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Render backend failed (${response.status}): ${body.slice(0, 80)}`);
+  }
+  return response.blob();
+}
+
 async function downloadViaAudioProxy(videoId) {
   debugLog("info", "Downloading via /api/audio", { videoId });
   const response = await fetch(`/api/audio?id=${encodeURIComponent(videoId)}`);
@@ -78,6 +92,7 @@ export async function downloadSearchResultToDevice(result) {
   // that cannot be fetched as blobs from the browser due to CORS. Always proxy through
   // Vercel (/api/audio or /api/download) to avoid CORS failures on mobile.
   for (const attempt of [
+    () => downloadViaRenderBackend(result.id),
     () => downloadViaAudioProxy(result.id),
     () => downloadViaYoutubei(result.id),
     () => downloadViaDownloadApi(result.id),

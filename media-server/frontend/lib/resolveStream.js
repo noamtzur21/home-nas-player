@@ -169,6 +169,39 @@ export async function resolveUpstreamStreamUrl(videoId) {
   }
 }
 
+export async function resolveFromCobalt(videoId) {
+  const cobaltUrl = "https://api.cobalt.tools/";
+  const body = {
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+    downloadMode: "audio",
+    audioFormat: "mp3",
+  };
+
+  const response = await fetch(cobaltUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Cobalt returned ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.status === "error" || data.status === "rate-limit") {
+    throw new Error(`Cobalt: ${data.error?.code || data.status}`);
+  }
+
+  const url = data.url;
+  if (!url) {
+    throw new Error(`Cobalt returned no URL (status: ${data.status})`);
+  }
+
+  return { url, source: "cobalt" };
+}
+
 export function buildAudioProxyUrl(videoId) {
   return `/api/audio?id=${encodeURIComponent(videoId)}`;
 }

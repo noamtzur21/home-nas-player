@@ -1,5 +1,5 @@
 import { Readable } from "node:stream";
-import { resolveFromPiped, resolveFromYoutubei } from "../lib/resolveStream.js";
+import { resolveFromCobalt, resolveFromPiped, resolveFromYoutubei } from "../lib/resolveStream.js";
 
 const IOS_USER_AGENT =
   "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)";
@@ -10,10 +10,15 @@ function safeFilename(id) {
 
 async function getUpstreamUrl(videoId) {
   try {
-    return (await resolveFromPiped(videoId)).url;
-  } catch (pipedError) {
-    console.warn("[download] Piped failed:", pipedError.message);
-    return (await resolveFromYoutubei(videoId)).url;
+    return (await resolveFromCobalt(videoId)).url;
+  } catch (cobaltError) {
+    console.warn("[download] Cobalt failed:", cobaltError.message);
+    try {
+      return (await resolveFromPiped(videoId)).url;
+    } catch (pipedError) {
+      console.warn("[download] Piped failed:", pipedError.message);
+      return (await resolveFromYoutubei(videoId)).url;
+    }
   }
 }
 

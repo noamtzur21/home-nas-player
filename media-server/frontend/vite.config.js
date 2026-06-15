@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => ({
             workbox: {
               cleanupOutdatedCaches: true,
               runtimeCaching: [],
+              navigateFallback: "index.html",
+              navigateFallbackDenylist: [/^\/api\//],
             },
           }),
         ]

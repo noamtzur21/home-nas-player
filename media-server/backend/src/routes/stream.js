@@ -180,6 +180,30 @@ function serveCachedFile(req, res, filePath) {
   fs.createReadStream(filePath).pipe(res);
 }
 
+const IOS_USER_AGENT =
+  "com.google.ios.youtube/19.29.1 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X; en_US)";
+
+async function proxyAudioUrl(upstreamUrl, req, res) {
+  const upstream = await fetch(upstreamUrl, {
+    headers: {
+      "User-Agent": IOS_USER_AGENT,
+      ...(req.headers.range ? { Range: req.headers.range } : {}),
+    },
+  });
+
+  if (!upstream.ok) throw new Error(`Upstream CDN returned ${upstream.status}`);
+
+  res.status(upstream.status);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  for (const name of ["content-type", "content-length", "content-range", "accept-ranges"]) {
+    const value = upstream.headers.get(name);
+    if (value) res.setHeader(name, value);
+  }
+
+  const { Readable } = await import("node:stream");
+  Readable.fromWeb(upstream.body).pipe(res);
+}
+
 export async function resolveStream(req, res) {
   try {
     const streamId = req.query.id;
@@ -222,7 +246,7 @@ export async function streamProxy(req, res) {
       if (cached) return serveCachedFile(req, res, cached);
 
       const directUrl = resolveDirectStreamUrl(streamId);
-      if (directUrl) return res.redirect(302, directUrl);
+      if (directUrl) return proxyAudioUrl(directUrl, req, res);
 
       const filePath = await ensureCachedAudio(streamId);
       return serveCachedFile(req, res, filePath);
