@@ -12,22 +12,8 @@ export default defineConfig(({ mode }) => ({
           VitePWA({
             registerType: "autoUpdate",
             workbox: {
-              runtimeCaching: [
-                {
-                  urlPattern: /^\/api\/stream.*/,
-                  handler: "CacheFirst",
-                  options: {
-                    cacheName: "v2-spotify-mp3-cache",
-                    expiration: {
-                      maxEntries: 50,
-                      maxAgeSeconds: 60 * 60 * 24 * 30,
-                    },
-                    cacheableResponse: {
-                      statuses: [0, 200],
-                    },
-                  },
-                },
-              ],
+              cleanupOutdatedCaches: true,
+              runtimeCaching: [],
             },
           }),
         ]

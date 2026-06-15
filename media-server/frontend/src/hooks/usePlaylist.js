@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { downloadTrackToDevice, deleteOfflineTrack } from "../utils/offlineStorage";
+import { deleteOfflineTrack } from "../utils/offlineStorage";
+import { downloadSearchResultToDevice } from "../utils/downloadAudio";
 
 const STORAGE_KEY = "media-server-playlist";
 const DEFAULT_ARTWORK = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80";
@@ -62,28 +63,31 @@ export function usePlaylist() {
     setTracks(current => current.filter(track => track.id !== id));
   };
 
-  const downloadTrack = async (track) => {
-    if (track.isDownloaded) return;
-    setDownloadingIds(current => new Set([...current, track.id]));
-
-    const streamEndpoint = import.meta.env.DEV ? "/stream" : "/api/stream";
-    const params = new URLSearchParams(track.streamId ? { id: track.streamId } : { url: track.sourceUrl });
-    const streamUrl = `${streamEndpoint}?${params.toString()}`;
-
-    const success = await downloadTrackToDevice(track.id, streamUrl);
-
-    if (success) {
-      setTracks(current =>
-        current.map(t => (t.id === track.id ? { ...t, isDownloaded: true } : t))
-      );
-    }
-
-    setDownloadingIds(current => {
-      const next = new Set(current);
-      next.delete(track.id);
-      return next;
-    });
+  const markDownloaded = (id) => {
+    setTracks((current) =>
+      current.map((track) => (track.id === id ? { ...track, isDownloaded: true } : track)),
+    );
   };
 
-  return { tracks, addTrack, removeTrack, downloadTrack, downloadingIds };
+  const downloadTrack = async (track) => {
+    if (track.isDownloaded) return;
+    setDownloadingIds((current) => new Set([...current, track.id]));
+
+    try {
+      await downloadSearchResultToDevice({
+        id: track.streamId || track.id,
+        title: track.title,
+        artist: track.artist,
+      });
+      markDownloaded(track.id);
+    } finally {
+      setDownloadingIds((current) => {
+        const next = new Set(current);
+        next.delete(track.id);
+        return next;
+      });
+    }
+  };
+
+  return { tracks, addTrack, removeTrack, downloadTrack, markDownloaded, downloadingIds };
 }

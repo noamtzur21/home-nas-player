@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       artist: video.author.name,
       thumbnail: video.thumbnail || video.image,
       duration: video.duration.timestamp,
+      url: `https://www.youtube.com/watch?v=${video.videoId}`,
     }));
 
     return res.status(200).json({ results, hasMore: false });

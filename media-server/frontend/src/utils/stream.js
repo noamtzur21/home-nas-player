@@ -1,20 +1,17 @@
 import { getOfflineTrackUrl } from "./offlineStorage";
+import { resolveStreamOnClient } from "./clientYoutube";
 import { debugLog } from "./debugLog";
-
-const PUBLIC_BACKEND = (import.meta.env.VITE_STREAM_BACKEND_URL || "").replace(/\/$/, "");
 
 function buildEndpoint(track) {
   if (track.streamId) {
     const params = `id=${encodeURIComponent(track.streamId)}`;
     if (import.meta.env.DEV) return `/stream?${params}`;
-    if (PUBLIC_BACKEND) return `${PUBLIC_BACKEND}/stream?${params}`;
     return `/api/stream?${params}`;
   }
 
   if (track.sourceUrl) {
     const params = `url=${encodeURIComponent(track.sourceUrl)}`;
     if (import.meta.env.DEV) return `/stream?${params}`;
-    if (PUBLIC_BACKEND) return `${PUBLIC_BACKEND}/stream?${params}`;
     return `/api/stream?${params}`;
   }
 
@@ -79,12 +76,31 @@ export async function buildStreamUrl(track) {
     return "";
   }
 
-  if (import.meta.env.DEV || PUBLIC_BACKEND) {
+  if (import.meta.env.DEV) {
     debugLog("info", "Direct backend stream", { endpoint: endpoint.slice(0, 100) });
     return endpoint;
   }
 
-  return resolvePlayableUrl(endpoint);
+  try {
+    const playableUrl = await resolvePlayableUrl(endpoint);
+    if (!playableUrl.startsWith("/api/audio")) {
+      return playableUrl;
+    }
+
+    debugLog("warn", "Server returned audio proxy, trying client-side resolve");
+    return await resolveStreamOnClient(track.streamId || track.id);
+  } catch (serverError) {
+    debugLog("warn", "Server stream resolve failed, trying client-side", {
+      message: serverError.message,
+    });
+
+    try {
+      return await resolveStreamOnClient(track.streamId || track.id);
+    } catch (clientError) {
+      debugLog("error", "Client-side resolve failed", { message: clientError.message });
+      throw serverError;
+    }
+  }
 }
 
 export function searchResultToTrack(result) {

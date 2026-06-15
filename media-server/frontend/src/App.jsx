@@ -8,8 +8,9 @@ import TrackList from "./components/TrackList.jsx";
 import { useAudioPlayback } from "./hooks/useAudioPlayback.js";
 import { usePlaylist } from "./hooks/usePlaylist.js";
 import { useSearch } from "./hooks/useSearch.js";
-import { searchResultToTrack } from "./utils/stream.js";
 import { debugLog, isDebugEnabled } from "./utils/debugLog.js";
+import { copyYoutubeUrl } from "./utils/youtubeUrl.js";
+import { downloadSearchResultToDevice } from "./utils/downloadAudio.js";
 import DebugPanel from "./components/DebugPanel.jsx";
 import "./App.css";
 
@@ -20,6 +21,7 @@ export default function App() {
     addTrack, 
     removeTrack, 
     downloadTrack, 
+    markDownloaded,
     downloadingIds 
   } = usePlaylist();
   
@@ -41,6 +43,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showAddForm, setShowAddForm] = useState(true);
   const [playlistMessage, setPlaylistMessage] = useState("");
+  const [selectedSearchResultId, setSelectedSearchResultId] = useState("");
 
   const activeIndex = useMemo(
     () => tracks.findIndex((track) => track.id === activeTrack?.id),
@@ -79,30 +82,42 @@ export default function App() {
     }
   }, [removeTrack, activeTrack?.id]);
 
-  const handlePlaySearchResult = useCallback(
+  const handleSelectSearchResult = useCallback((result) => {
+    setSelectedSearchResultId(result.id);
+  }, []);
+
+  const handleDownloadSearchResult = useCallback(
     async (result) => {
-      await selectTrack(searchResultToTrack(result), { shouldAutoPlay: true });
-    },
-    [selectTrack]
-  );
+      await downloadSearchResultToDevice(result);
 
-  const handleAddSearchResult = useCallback(
-    (result) => {
-      const addResult = addTrack({
-        title: result.title,
-        artist: result.artist,
-        streamId: result.id,
-        artwork: result.thumbnail,
-      });
-
-      if (addResult.ok) {
-        setPlaylistMessage(`Added "${result.title}" to your playlist.`);
-      } else {
-        setPlaylistMessage(addResult.error);
+      let track = tracks.find((t) => t.streamId === result.id || t.id === result.id);
+      if (!track) {
+        const addResult = addTrack({
+          title: result.title,
+          artist: result.artist,
+          streamId: result.id,
+          artwork: result.thumbnail,
+        });
+        if (!addResult.ok) throw new Error(addResult.error);
+        track = addResult.track;
       }
+
+      markDownloaded(track.id);
+      const playableTrack = { ...track, isDownloaded: true };
+      await selectTrack(playableTrack, { shouldAutoPlay: true });
+      setPlaylistMessage(`Playing offline: ${result.title}`);
     },
-    [addTrack]
+    [tracks, addTrack, markDownloaded, selectTrack],
   );
+
+  useEffect(() => {
+    if (results.length > 0) {
+      setSelectedSearchResultId(results[0].id);
+      copyYoutubeUrl(results[0]).catch(() => {});
+    } else {
+      setSelectedSearchResultId("");
+    }
+  }, [results]);
 
   const goToPrevious = useCallback(async () => {
     if (!hasPrevious) return;
@@ -147,7 +162,7 @@ export default function App() {
           <p className="eyebrow">Home NAS Player</p>
           <h1>Your private playlist</h1>
           <p className="subtitle">
-            Search your media catalog, save favorites, and stream through your local proxy.
+            Search a song, download it to your device, and play offline with full controls.
           </p>
         </header>
 
@@ -163,9 +178,9 @@ export default function App() {
           results={results}
           isSearching={isSearching}
           error={searchError}
-          activeTrackId={activeTrack?.streamId || activeTrack?.id}
-          onPlay={handlePlaySearchResult}
-          onAdd={handleAddSearchResult}
+          selectedResultId={selectedSearchResultId}
+          onSelectResult={handleSelectSearchResult}
+          onDownloadAndPlay={handleDownloadSearchResult}
           hasMore={hasMore}
           onLoadMore={loadMore}
         />

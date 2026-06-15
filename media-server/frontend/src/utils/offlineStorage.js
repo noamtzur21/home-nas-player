@@ -1,18 +1,22 @@
 import { get, set, del } from "idb-keyval";
 
-// פונקציה שמורידה את השיר מהשרת ושומרת אותו בטלפון
+// פונקציה שמורידה את השיר ושומרת אותו בטלפון
 export async function downloadTrackToDevice(trackId, streamUrl) {
   try {
     const response = await fetch(streamUrl);
     if (!response.ok) throw new Error("Failed to fetch audio file");
-    
-    const blob = await response.blob(); // הופך את ה-MP3 לקובץ בינארי
-    await set(`track-${trackId}`, blob); // שומר ב-IndexedDB של האייפון
+
+    const blob = await response.blob();
+    await set(`track-${trackId}`, blob);
     return true;
   } catch (error) {
     console.error("Download failed:", error);
     return false;
   }
+}
+
+export async function saveTrackBlob(trackId, blob) {
+  await set(`track-${trackId}`, blob);
 }
 
 // פונקציה שבודקת אם יש שיר שמור באופליין ומחזירה כתובת מקומית שלו
