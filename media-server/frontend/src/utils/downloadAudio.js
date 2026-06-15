@@ -55,7 +55,7 @@ async function downloadViaRenderBackend(videoId) {
     import.meta.env.VITE_STREAM_BACKEND_URL || "https://media-server-backend-lwi0.onrender.com";
   debugLog("info", "Downloading via Render backend (yt-dlp)", { videoId, backendUrl });
   const response = await fetch(`${backendUrl}/stream?id=${encodeURIComponent(videoId)}`, {
-    signal: AbortSignal.timeout(120000),
+    signal: AbortSignal.timeout(240000),
   });
   if (!response.ok) {
     const body = await response.text();
