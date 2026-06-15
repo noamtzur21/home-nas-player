@@ -245,9 +245,6 @@ export async function streamProxy(req, res) {
       const cached = findCachedFile(streamId);
       if (cached) return serveCachedFile(req, res, cached);
 
-      const directUrl = resolveDirectStreamUrl(streamId);
-      if (directUrl) return proxyAudioUrl(directUrl, req, res);
-
       const filePath = await ensureCachedAudio(streamId);
       return serveCachedFile(req, res, filePath);
     }
