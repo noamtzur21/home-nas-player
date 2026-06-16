@@ -13,6 +13,19 @@ import { createSmoothProgress, saveTrackBlobWithProgress } from "../utils/upload
 import { fetchCloudLibrary, saveCloudLibrary, uploadTrackAudio } from "../lib/cloudLibrary";
 
 const CLOUD_WRITE_DEBOUNCE_MS = 1500;
+const CLOUD_INIT_TIMEOUT_MS = 12000;
+const OFFLINE_FLAGS_TIMEOUT_MS = 8000;
+
+function hasCloudConfig() {
+  return Boolean(import.meta.env.VITE_FIREBASE_USER_EMAIL && import.meta.env.VITE_FIREBASE_USER_PASSWORD);
+}
+
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+}
 
 const LIBRARY_KEY = "noam-spotify-library";
 const LEGACY_KEY = "media-server-playlist";
@@ -140,27 +153,47 @@ export function usePlaylists() {
     async function init() {
       let working = library;
 
-      try {
-        const cloud = await fetchCloudLibrary();
-        if (cancelled) return;
-
-        if (cloud?.playlists?.length) {
-          working = cloud;
-        } else {
-          await saveCloudLibrary(working);
-        }
-        setCloudStatus("synced");
-      } catch (error) {
-        console.warn("[cloud-sync] unavailable, continuing with the local library:", error.message);
+      if (!hasCloudConfig()) {
         setCloudStatus("offline");
+      } else {
+        try {
+          const cloud = await withTimeout(
+            fetchCloudLibrary(),
+            CLOUD_INIT_TIMEOUT_MS,
+            "Cloud library init timed out",
+          );
+          if (cancelled) return;
+
+          if (cloud?.playlists?.length) {
+            working = cloud;
+          } else {
+            // Seed the cloud doc without blocking the UI on first launch.
+            saveCloudLibrary(working).catch((error) => {
+              console.warn("[cloud-sync] initial upload failed:", error.message);
+            });
+          }
+          setCloudStatus("synced");
+        } catch (error) {
+          console.warn("[cloud-sync] unavailable, continuing with the local library:", error.message);
+          if (!cancelled) setCloudStatus("offline");
+        }
       }
 
-      const synced = await syncLibraryOfflineFlags(working);
-      if (cancelled) return;
-
-      setLibrary(synced);
-      setIsSyncing(false);
-      backfillCloudAudio(synced);
+      try {
+        const synced = await withTimeout(
+          syncLibraryOfflineFlags(working),
+          OFFLINE_FLAGS_TIMEOUT_MS,
+          "Offline library scan timed out",
+        );
+        if (cancelled) return;
+        setLibrary(synced);
+        backfillCloudAudio(synced);
+      } catch (error) {
+        console.warn("[cloud-sync] offline scan skipped:", error.message);
+        if (!cancelled) setLibrary(working);
+      } finally {
+        if (!cancelled) setIsSyncing(false);
+      }
     }
 
     init();

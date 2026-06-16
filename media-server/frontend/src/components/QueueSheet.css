@@ -1,0 +1,126 @@
+.queue-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: queue-fade-in 0.2s ease;
+}
+
+.queue-sheet {
+  width: min(560px, 100%);
+  max-height: 70vh;
+  overflow: auto;
+  background: #181818;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  animation: queue-slide-up 0.28s ease;
+  color: #fff;
+}
+
+.queue-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 auto 16px;
+}
+
+.queue-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.queue-sheet-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.queue-sheet-close {
+  border: 0;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.queue-sheet-empty {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.9rem;
+}
+
+.queue-sheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.queue-sheet-item {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.queue-sheet-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.queue-sheet-art {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.queue-sheet-meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.queue-sheet-meta strong,
+.queue-sheet-meta span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-sheet-meta span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.82rem;
+}
+
+@keyframes queue-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes queue-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}

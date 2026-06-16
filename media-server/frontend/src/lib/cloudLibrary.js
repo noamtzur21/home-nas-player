@@ -2,6 +2,15 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { auth, db, ensureSignedIn, storage } from "./firebase";
 
+const CLOUD_OP_TIMEOUT_MS = 10000;
+
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms)),
+  ]);
+}
+
 function libraryDocRef() {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error("Not signed in to cloud sync.");
@@ -10,14 +19,18 @@ function libraryDocRef() {
 
 export async function fetchCloudLibrary() {
   await ensureSignedIn();
-  const snapshot = await getDoc(libraryDocRef());
+  const snapshot = await withTimeout(getDoc(libraryDocRef()), CLOUD_OP_TIMEOUT_MS, "Cloud library fetch timed out");
   if (!snapshot.exists()) return null;
   return snapshot.data().library || null;
 }
 
 export async function saveCloudLibrary(library) {
   await ensureSignedIn();
-  await setDoc(libraryDocRef(), { library, updatedAt: Date.now() });
+  await withTimeout(
+    setDoc(libraryDocRef(), { library, updatedAt: Date.now() }),
+    CLOUD_OP_TIMEOUT_MS,
+    "Cloud library save timed out",
+  );
 }
 
 function audioStoragePath(uid, trackId) {

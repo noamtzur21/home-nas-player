@@ -13,7 +13,7 @@
   --surface-border: rgba(255, 255, 255, 0.08);
   --text-muted: rgba(255, 255, 255, 0.55);
   --app-bottom-nav-height: calc(56px + env(safe-area-inset-bottom, 0px));
-  --app-player-height: 128px;
+  --app-player-height: 70px;
 }
 
 * {
