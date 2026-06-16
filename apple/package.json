@@ -2,7 +2,7 @@
   "name": "noam-spotify-apple",
   "version": "1.0.0",
   "private": true,
-  "description": "Native iOS shell for Noam Spotify (CarPlay + App Store). Does not replace the Vercel PWA.",
+  "description": "Native iOS shell for Noam Music (CarPlay + App Store). Does not replace the Vercel PWA.",
   "scripts": {
     "build:web": "bash scripts/sync-from-web.sh",
     "cap:sync": "npm run build:web && npx cap sync ios",

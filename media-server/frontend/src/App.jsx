@@ -13,7 +13,6 @@ import { useAudioPlayback } from "./hooks/useAudioPlayback.js";
 import { usePersistentAudio } from "./hooks/usePersistentAudio.js";
 import { usePlaylists } from "./hooks/usePlaylists.js";
 import { useSearch } from "./hooks/useSearch.js";
-import { useSuggestions } from "./hooks/useSuggestions.js";
 import { debugLog, isDebugEnabled } from "./utils/debugLog.js";
 import { findCoverArtForTrack } from "./utils/trackMetadata.js";
 import { hideNativeSplash } from "./utils/nativeShell.js";
@@ -47,9 +46,6 @@ export default function App() {
     runSearch,
     loadMore,
   } = useSearch();
-
-  const { suggestions, isLoading: isLoadingSuggestions, error: suggestionsError, refresh, hasPlaylist } =
-    useSuggestions(tracks);
 
   const { audioRef } = useAudioPlayback();
 
@@ -121,7 +117,7 @@ export default function App() {
     onPrevious: goToPrevious,
     queueIndex: activeIndex >= 0 ? activeIndex : 0,
     queueSize: queueTracks.length,
-    playlistName: activePlaylist?.name || "Noam Spotify",
+    playlistName: activePlaylist?.name || "Noam Music",
   });
 
   const handlePlayFromQueue = useCallback(
@@ -284,11 +280,6 @@ export default function App() {
             onSelectResult={handleSelectSearchResult}
             hasMore={hasMore}
             onLoadMore={loadMore}
-            suggestions={suggestions}
-            isLoadingSuggestions={isLoadingSuggestions}
-            suggestionsError={suggestionsError}
-            onRefreshSuggestions={refresh}
-            showSuggestions={hasPlaylist}
           />
         ) : null}
 

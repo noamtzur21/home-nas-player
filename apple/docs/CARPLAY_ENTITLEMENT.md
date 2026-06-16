@@ -1,12 +1,12 @@
-# CarPlay Entitlement — Noam Spotify
+# CarPlay Entitlement — Noam Music
 
 ## 1. הגש בקשה ל-Apple
 
 1. היכנס ל-[CarPlay Contact Form](https://developer.apple.com/contact/carplay/)
 2. בחר **CarPlay Audio App**
 3. מלא:
-   - **App name:** Noam Spotify
-   - **Bundle ID:** `com.noam.spotify` (אותו ID כמו ב-capacitor.config.ts)
+   - **App name:** Noam Music
+   - **Bundle ID:** `com.noam.music` (אותו ID כמו ב-capacitor.config.ts)
    - **Description:** Personal music player. Users manage playlists, upload MP3 files for offline playback, search songs for YouTube URLs. Background audio, lock screen, and CarPlay Now Playing controls.
    - **Why CarPlay:** Safe in-car playback of user's own music library without phone interaction.
 
@@ -14,7 +14,7 @@
 
 Apple יוסיפו entitlement ל-App ID שלך ב-Developer Portal:
 
-1. [Identifiers](https://developer.apple.com/account/resources/identifiers/list) → App ID → `com.noam.spotify`
+1. [Identifiers](https://developer.apple.com/account/resources/identifiers/list) → App ID → `com.noam.music`
 2. ודא ש-CarPlay Audio מסומן
 3. ב-Xcode → Signing & Capabilities → **+ Capability** → CarPlay → **Audio App**
 

@@ -25,7 +25,7 @@ function syncPositionState({ duration, currentTime, isPlaying }) {
 export function useMediaSession({
   title,
   artist,
-  album = "Noam Spotify",
+  album = "Noam Music",
   artwork,
   isPlaying,
   currentTime,

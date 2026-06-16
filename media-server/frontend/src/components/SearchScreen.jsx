@@ -1,6 +1,5 @@
 import SearchBar from "./SearchBar.jsx";
 import SearchResults from "./SearchResults.jsx";
-import SuggestionsPanel from "./SuggestionsPanel.jsx";
 import "./SearchScreen.css";
 
 export default function SearchScreen({
@@ -15,11 +14,6 @@ export default function SearchScreen({
   onSelectResult,
   hasMore,
   onLoadMore,
-  suggestions,
-  isLoadingSuggestions,
-  suggestionsError,
-  onRefreshSuggestions,
-  showSuggestions,
 }) {
   return (
     <div className="search-screen">
@@ -34,17 +28,6 @@ export default function SearchScreen({
         onSubmit={onSubmit}
         isSearching={isSearching}
       />
-
-      {showSuggestions ? (
-        <SuggestionsPanel
-          suggestions={suggestions}
-          isLoading={isLoadingSuggestions}
-          error={suggestionsError}
-          onRefresh={onRefreshSuggestions}
-          onSelectResult={onSelectResult}
-          selectedResultId={selectedResultId}
-        />
-      ) : null}
 
       <SearchResults
         query={lastQuery}

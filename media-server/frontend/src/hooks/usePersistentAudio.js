@@ -19,7 +19,7 @@ export function usePersistentAudio({
   onPrevious,
   queueIndex = 0,
   queueSize = 0,
-  playlistName = "Noam Spotify",
+  playlistName = "Noam Music",
 }) {
   const [streamUrl, setStreamUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);

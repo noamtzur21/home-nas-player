@@ -1,4 +1,4 @@
-# App Store Checklist — Noam Spotify
+# App Store Checklist — Noam Music
 
 ## לפני Submit
 
@@ -22,7 +22,7 @@
 **הסבר:** פלייליסטים ו-MP3 נשמרים **רק במכשיר**. חיפוש שולח query לשרת Vercel.
 
 ### Metadata
-- [ ] שם: Noam Spotify
+- [ ] שם: Noam Music
 - [ ] Subtitle: Personal music player
 - [ ] Description (EN + HE אם רלוונטי)
 - [ ] Keywords: music, playlist, offline, mp3
@@ -44,7 +44,7 @@
 ### Review Notes (למreviewer)
 
 ```
-Noam Spotify is a personal music player.
+Noam Music is a personal music player.
 
 Login: Not required.
 

@@ -9,7 +9,7 @@ export default function AppHeader({ activePlaylistName, onOpenPlaylists }) {
         </span>
         <div>
           <p className="app-brand-eyebrow">Welcome back</p>
-          <h1 className="app-brand-title">Noam Spotify</h1>
+          <h1 className="app-brand-title">Noam Music</h1>
         </div>
       </div>
 

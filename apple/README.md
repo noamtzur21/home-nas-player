@@ -1,4 +1,4 @@
-# Noam Spotify — Apple / iOS / CarPlay
+# Noam Music — Apple / iOS / CarPlay
 
 תיקייה זו **נפרדת לחלוטין** מה-PWA ב-`media-server/frontend`.
 
@@ -30,7 +30,7 @@ npm run cap:open         # פותח Xcode
 
 ב-Xcode:
 1. Team → חשבון Apple Developer שלך
-2. Bundle ID: `com.noam.spotify` (או שנה ב-`capacitor.config.ts`)
+2. Bundle ID: `com.noam.music` (מוגדר ב-`capacitor.config.ts`)
 3. Run על iPhone / Simulator
 
 ---

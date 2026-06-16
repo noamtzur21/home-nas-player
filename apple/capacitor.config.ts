@@ -1,15 +1,15 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 /**
- * Native iOS wrapper for the existing Noam Spotify web app.
+ * Native iOS wrapper for the existing Noam Music web app.
  * The React app lives in ../media-server/frontend — we only copy its build output here.
  *
  * Optional: load from Vercel instead of bundled files (comment webDir, uncomment server):
  *   server: { url: "https://YOUR-VERCEL-URL.vercel.app", cleartext: false }
  */
 const config: CapacitorConfig = {
-  appId: "com.noam.spotify",
-  appName: "Noam Spotify",
+  appId: "com.noam.music",
+  appName: "Noam Music",
   webDir: "web-dist",
   ios: {
     contentInset: "automatic",
