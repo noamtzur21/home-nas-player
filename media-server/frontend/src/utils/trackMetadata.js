@@ -1,5 +1,9 @@
 // Junk fragments that show up in YouTube upload titles/filenames but aren't
 // part of the actual song name or artist. Hebrew + English variants.
+import { searchApiUrl } from "./apiBase";
+import { fetchWithTimeout } from "./fetchWithTimeout";
+import { searchVideosForApp } from "./pipedSearch";
+
 const JUNK_PATTERNS = [
   /^(ytmp3|y2mate|ssyoutube|mp3juice|320ytmp3)[^\w]*/i,
   /^\d+[-_\s]*/,
@@ -155,16 +159,53 @@ function pickBestMatch(candidates, guess) {
   return { best, bestScore };
 }
 
+async function searchCandidates(query) {
+  // searchVideosForApp already returns { id, title, artist, thumbnail, ... }
+  // (unlike searchPipedVideos, which drops the thumbnail) so candidates here
+  // always carry cover art when Piped has a result.
+  const pipedItems = await searchVideosForApp(query);
+  if (pipedItems.length) {
+    return pipedItems;
+  }
+
+  try {
+    const response = await fetchWithTimeout(searchApiUrl(query), 12000);
+    if (!response.ok) return [];
+    const payload = await response.json();
+    return payload.results || [];
+  } catch {
+    return [];
+  }
+}
+
+// Looks up the real cover art for a track that's already in the library
+// (title/artist as typed, not a filename guess). Used by the "find cover
+// art" button on a track row to replace the generic placeholder art with
+// the song's real logo/thumbnail.
+export async function findCoverArtForTrack({ title, artist }) {
+  const query = `${artist || ""} ${title || ""}`.trim();
+  if (!query) return { ok: false, error: "Missing title or artist." };
+
+  try {
+    const candidates = await searchCandidates(query);
+    if (!candidates.length) return { ok: false, error: "No matches found." };
+
+    const { best, bestScore } = pickBestMatch(candidates, { query, title, artist });
+    if (!best || bestScore < MATCH_CONFIDENCE_THRESHOLD || !best.thumbnail) {
+      return { ok: false, error: "No confident match found." };
+    }
+
+    return { ok: true, artwork: best.thumbnail, matchedTitle: best.title, matchConfidence: bestScore };
+  } catch {
+    return { ok: false, error: "Search failed." };
+  }
+}
+
 export async function lookupTrackMetadata(filename) {
   const guess = parseFilename(filename);
 
   try {
-    const searchPath = import.meta.env.DEV ? "/search" : "/api/search";
-    const response = await fetch(`${searchPath}?${new URLSearchParams({ q: guess.query })}`);
-    if (!response.ok) return guess;
-
-    const payload = await response.json();
-    const candidates = payload.results || [];
+    const candidates = await searchCandidates(guess.query);
     if (!candidates.length) return guess;
 
     const { best, bestScore } = pickBestMatch(candidates, guess);
@@ -176,7 +217,7 @@ export async function lookupTrackMetadata(filename) {
 
     return {
       title: title || guess.title,
-      artist: cleanArtistName(artist) || guess.artist,
+      artist: cleanArtistName(artist || best.artist) || guess.artist,
       artwork: best.thumbnail,
       streamId: best.id,
       query: guess.query,

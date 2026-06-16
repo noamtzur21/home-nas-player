@@ -139,6 +139,38 @@
   color: #1db954;
 }
 
+.track-find-art-btn {
+  border: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.track-find-art-btn:hover {
+  background: rgba(29, 185, 84, 0.2);
+  color: #1db954;
+}
+
+.track-find-art-btn--loading {
+  color: rgba(255, 255, 255, 0.8);
+  cursor: wait;
+}
+
+.track-find-art-btn--success {
+  background: rgba(29, 185, 84, 0.25);
+  color: #1db954;
+}
+
+.track-find-art-btn--error {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
 .track-row--editing {
   display: grid;
   grid-template-columns: 52px 1fr auto;

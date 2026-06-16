@@ -1,11 +1,20 @@
 import { useState } from "react";
 import TrackArtwork from "./TrackArtwork.jsx";
 
-export default function TrackRow({ track, index, isActive, onSelectTrack, onRemoveTrack, onRenameTrack }) {
+export default function TrackRow({
+  track,
+  index,
+  isActive,
+  onSelectTrack,
+  onRemoveTrack,
+  onRenameTrack,
+  onFindArtwork,
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(track.title);
   const [artist, setArtist] = useState(track.artist);
   const [error, setError] = useState("");
+  const [artStatus, setArtStatus] = useState("idle"); // idle | loading | success | error
 
   const startEditing = () => {
     setTitle(track.title);
@@ -27,6 +36,14 @@ export default function TrackRow({ track, index, isActive, onSelectTrack, onRemo
       return;
     }
     setIsEditing(false);
+  };
+
+  const findArtwork = async () => {
+    if (artStatus === "loading") return;
+    setArtStatus("loading");
+    const result = await onFindArtwork(track);
+    setArtStatus(result?.ok ? "success" : "error");
+    setTimeout(() => setArtStatus("idle"), 2200);
   };
 
   if (isEditing) {
@@ -82,6 +99,18 @@ export default function TrackRow({ track, index, isActive, onSelectTrack, onRemo
             title="Edit song name / artist"
           >
             ✎
+          </button>
+        ) : null}
+        {onFindArtwork ? (
+          <button
+            type="button"
+            className={`track-find-art-btn${artStatus !== "idle" ? ` track-find-art-btn--${artStatus}` : ""}`}
+            onClick={findArtwork}
+            disabled={artStatus === "loading"}
+            aria-label={`Find cover art for ${track.title}`}
+            title="חפש את השיר וייבא את הלוגו/תקליטון שלו"
+          >
+            {artStatus === "loading" ? "⏳" : artStatus === "success" ? "✓" : artStatus === "error" ? "✕" : "🔍"}
           </button>
         ) : null}
         {onRemoveTrack ? (

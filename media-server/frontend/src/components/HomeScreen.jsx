@@ -10,6 +10,7 @@ export default function HomeScreen({
   onAddTrack,
   onRemoveTrack,
   onRenameTrack,
+  onFindArtwork,
   isUploading,
 }) {
   return (
@@ -28,6 +29,7 @@ export default function HomeScreen({
         onSelectTrack={onSelectTrack}
         onRemoveTrack={onRemoveTrack}
         onRenameTrack={onRenameTrack}
+        onFindArtwork={onFindArtwork}
         onAddTrack={onAddTrack}
         title="Your songs"
         isUploading={isUploading}

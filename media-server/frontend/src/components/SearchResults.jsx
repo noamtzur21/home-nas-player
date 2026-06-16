@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { copyYoutubeUrl, getYoutubeUrl } from "../utils/youtubeUrl.js";
+import { copyYoutubeUrl, getYoutubeUrl, openDownloaderForVideo } from "../utils/youtubeUrl.js";
 import "./SearchResults.css";
 
 export default function SearchResults({
@@ -13,6 +13,7 @@ export default function SearchResults({
   onLoadMore,
 }) {
   const [copyFeedback, setCopyFeedback] = useState("");
+  const [downloadFeedback, setDownloadFeedback] = useState("");
 
   if (!query && results.length === 0 && !error) {
     return null;
@@ -30,6 +31,19 @@ export default function SearchResults({
     } catch {
       setCopyFeedback("Copy failed");
       setTimeout(() => setCopyFeedback(""), 2000);
+    }
+  };
+
+  const handleDownload = async (event, result) => {
+    event.stopPropagation();
+    onSelectResult(result);
+    try {
+      await openDownloaderForVideo(result);
+      setDownloadFeedback(result.id);
+      setTimeout(() => setDownloadFeedback(""), 2000);
+    } catch {
+      setDownloadFeedback("failed");
+      setTimeout(() => setDownloadFeedback(""), 2000);
     }
   };
 
@@ -59,6 +73,13 @@ export default function SearchResults({
             >
               {copyFeedback || "Copy URL"}
             </button>
+            <button
+              type="button"
+              className="result-copy-btn"
+              onClick={(event) => selected && handleDownload(event, selected)}
+            >
+              {downloadFeedback === selected?.id ? "נפתח!" : "הורדה"}
+            </button>
           </div>
         </div>
       ) : null}
@@ -70,21 +91,33 @@ export default function SearchResults({
           const url = getYoutubeUrl(result);
 
           return (
-            <button
+            <div
               key={result.id}
-              type="button"
-              className={`search-result-row search-result-row--button ${isSelected ? "active" : ""}`}
-              onClick={() => handleCopy(result)}
+              className={`search-result-row ${isSelected ? "active" : ""}`}
             >
-              <img src={result.thumbnail} alt="" className="search-result-art" />
-              <div className="search-result-meta">
-                <strong>{result.title}</strong>
-                <span>{result.artist}</span>
-                <span className="search-result-url">{url}</span>
-              </div>
-              <span className="search-result-duration">{result.duration}</span>
-              <span className="search-result-pick">{isSelected ? "Selected" : "Tap for URL"}</span>
-            </button>
+              <button
+                type="button"
+                className="search-result-main"
+                onClick={() => handleCopy(result)}
+              >
+                <img src={result.thumbnail} alt="" className="search-result-art" />
+                <div className="search-result-meta">
+                  <strong>{result.title}</strong>
+                  <span>{result.artist}</span>
+                  <span className="search-result-url">{url}</span>
+                </div>
+                <span className="search-result-duration">{result.duration}</span>
+                <span className="search-result-pick">{isSelected ? "Selected" : "Tap for URL"}</span>
+              </button>
+              <button
+                type="button"
+                className="search-result-download-btn"
+                onClick={(event) => handleDownload(event, result)}
+                aria-label={`Download ${result.title}`}
+              >
+                {downloadFeedback === result.id ? "נפתח!" : "הורדה"}
+              </button>
+            </div>
           );
         })}
       </div>

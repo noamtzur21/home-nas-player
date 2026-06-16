@@ -9,6 +9,8 @@ import {
 } from "../utils/offlineStorage";
 import { DEFAULT_OFFLINE_ARTWORK } from "../utils/defaultArtwork";
 import { lookupTrackMetadata } from "../utils/trackMetadata";
+import { buildLocalFileKey, findDuplicateLocalTrack } from "../utils/localFileKey";
+import { mergeLibraries } from "../utils/libraryMerge";
 import { createSmoothProgress, saveTrackBlobWithProgress } from "../utils/uploadProgress";
 import { fetchCloudLibrary, saveCloudLibrary, uploadTrackAudio } from "../lib/cloudLibrary";
 
@@ -119,6 +121,11 @@ export function usePlaylists() {
   const [isSyncing, setIsSyncing] = useState(true);
   const [cloudStatus, setCloudStatus] = useState("connecting");
   const cloudWriteTimeoutRef = useRef(null);
+  const libraryRef = useRef(library);
+
+  useEffect(() => {
+    libraryRef.current = library;
+  }, [library]);
 
   // Re-upload any locally-added MP3 that doesn't have a cloud backup yet
   // (e.g. it was added before cloud sync existed, or a previous upload
@@ -151,7 +158,7 @@ export function usePlaylists() {
     let cancelled = false;
 
     async function init() {
-      let working = library;
+      let working = libraryRef.current;
 
       if (!hasCloudConfig()) {
         setCloudStatus("offline");
@@ -165,10 +172,10 @@ export function usePlaylists() {
           if (cancelled) return;
 
           if (cloud?.playlists?.length) {
-            working = cloud;
+            working = mergeLibraries(cloud, libraryRef.current);
           } else {
             // Seed the cloud doc without blocking the UI on first launch.
-            saveCloudLibrary(working).catch((error) => {
+            saveCloudLibrary(libraryRef.current).catch((error) => {
               console.warn("[cloud-sync] initial upload failed:", error.message);
             });
           }
@@ -186,11 +193,11 @@ export function usePlaylists() {
           "Offline library scan timed out",
         );
         if (cancelled) return;
-        setLibrary(synced);
-        backfillCloudAudio(synced);
+        setLibrary((current) => mergeLibraries(synced, current));
+        backfillCloudAudio(mergeLibraries(synced, libraryRef.current));
       } catch (error) {
         console.warn("[cloud-sync] offline scan skipped:", error.message);
-        if (!cancelled) setLibrary(working);
+        if (!cancelled) setLibrary((current) => mergeLibraries(working, current));
       } finally {
         if (!cancelled) setIsSyncing(false);
       }
@@ -204,8 +211,11 @@ export function usePlaylists() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (isSyncing) return;
     saveLibrary(library);
+  }, [library]);
+
+  useEffect(() => {
+    if (isSyncing) return;
 
     if (cloudWriteTimeoutRef.current) clearTimeout(cloudWriteTimeoutRef.current);
     cloudWriteTimeoutRef.current = setTimeout(() => {
@@ -332,6 +342,13 @@ export function usePlaylists() {
 
       const targetId = playlistId || library.activePlaylistId;
       const progress = createSmoothProgress(onProgress || (() => {}));
+      const fileKey = buildLocalFileKey(file);
+
+      const duplicate = findDuplicateLocalTrack(library.playlists, file, fileKey);
+      if (duplicate) {
+        return { ok: false, error: "הקובץ הזה כבר נמצא בספרייה." };
+      }
+
       const id = crypto.randomUUID();
 
       try {
@@ -378,6 +395,7 @@ export function usePlaylists() {
           isDownloaded: true,
           isLocal: true,
           fileSize: file.size,
+          localFileKey: fileKey,
           createdAt: Date.now(),
         };
 
@@ -445,6 +463,32 @@ export function usePlaylists() {
     [library.activePlaylistId],
   );
 
+  const updateTrackArtwork = useCallback(
+    async (trackId, artworkUrl, playlistId) => {
+      const targetId = playlistId || library.activePlaylistId;
+      if (!artworkUrl) return { ok: false, error: "No artwork found." };
+
+      const cachedUrl = await saveTrackArtwork(trackId, artworkUrl);
+
+      setLibrary((current) => ({
+        ...current,
+        playlists: current.playlists.map((playlist) =>
+          playlist.id === targetId
+            ? {
+                ...playlist,
+                tracks: playlist.tracks.map((track) =>
+                  track.id === trackId ? { ...track, artwork: cachedUrl || artworkUrl } : track,
+                ),
+              }
+            : playlist,
+        ),
+      }));
+
+      return { ok: true };
+    },
+    [library.activePlaylistId],
+  );
+
   const removeTrack = useCallback(async (trackId, playlistId) => {
     const targetId = playlistId || library.activePlaylistId;
     await deleteOfflineTrack(trackId);
@@ -476,6 +520,7 @@ export function usePlaylists() {
     addTrack,
     addLocalTrack,
     renameTrack,
+    updateTrackArtwork,
     removeTrack,
     getPlaylistTracks,
     updateActivePlaylist,

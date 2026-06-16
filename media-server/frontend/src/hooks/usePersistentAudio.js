@@ -29,11 +29,22 @@ export function usePersistentAudio({
   const [artworkUrl, setArtworkUrl] = useState(DEFAULT_OFFLINE_ARTWORK);
   const [sessionArtwork, setSessionArtwork] = useState(null);
   const loadedTrackKeyRef = useRef(null);
+  const streamTrackIdRef = useRef(null);
+  const playbackEpochRef = useRef(0);
 
   const { markUserPaused } = useBackgroundPlayback({ audioRef, isPlaying });
 
   useEffect(() => {
+    const audio = audioRef.current;
+
     if (!activeTrack) {
+      streamTrackIdRef.current = null;
+      loadedTrackKeyRef.current = null;
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
       setStreamUrl("");
       setPlaybackError("");
       setCurrentTime(0);
@@ -42,12 +53,21 @@ export function usePersistentAudio({
     }
 
     let cancelled = false;
+    const epoch = ++playbackEpochRef.current;
+    const trackId = activeTrack.id;
+
+    streamTrackIdRef.current = null;
     loadedTrackKeyRef.current = null;
     setStreamUrl("");
     setCurrentTime(0);
     setDuration(0);
     setPlaybackError("");
     setIsLoading(true);
+
+    if (audio) {
+      audio.pause();
+      delete audio.dataset.requestedSrc;
+    }
 
     getArtworkUrl(activeTrack.id, activeTrack.artwork || DEFAULT_OFFLINE_ARTWORK).then(async (url) => {
       if (cancelled) return;
@@ -59,17 +79,18 @@ export function usePersistentAudio({
 
     buildStreamUrl(activeTrack)
       .then((url) => {
-        if (cancelled) return;
+        if (cancelled || playbackEpochRef.current !== epoch) return;
         if (!url) {
           setPlaybackError("Could not load audio");
           setIsLoading(false);
           return;
         }
+        streamTrackIdRef.current = trackId;
         setStreamUrl(url);
         setIsLoading(false);
       })
       .catch((error) => {
-        if (cancelled) return;
+        if (cancelled || playbackEpochRef.current !== epoch) return;
         setPlaybackError(error.message?.slice(0, 80) || "Playback failed");
         setIsLoading(false);
       });
@@ -77,17 +98,19 @@ export function usePersistentAudio({
     return () => {
       cancelled = true;
     };
-  }, [activeTrack, setIsPlaying]);
+  }, [activeTrack, audioRef, setIsPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !streamUrl || !activeTrack) return;
+    if (streamTrackIdRef.current !== activeTrack.id) return;
 
     const trackKey = activeTrack.id;
     if (loadedTrackKeyRef.current === trackKey) return;
 
     loadedTrackKeyRef.current = trackKey;
     audio.src = streamUrl;
+    delete audio.dataset.requestedSrc;
     setIsLoading(true);
   }, [audioRef, streamUrl, activeTrack]);
 
@@ -134,19 +157,51 @@ export function usePersistentAudio({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !streamUrl) return;
+    if (!audio || !isPlaying) return;
 
-    if (isPlaying && streamUrl) {
-      if (audio.paused) {
-        playAudioElement(audio, streamUrl).catch(() => {
-          setIsPlaying(false);
-          setPlaybackError("Tap play to start");
-        });
+    let frame = 0;
+    const tick = () => {
+      if (!audio.paused) {
+        setCurrentTime(audio.currentTime);
       }
-    } else if (!isPlaying) {
+      frame = requestAnimationFrame(tick);
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [audioRef, isPlaying, activeTrack?.id]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!activeTrack || !streamUrl) {
+      if (!isPlaying) audio.pause();
+      return;
+    }
+
+    if (streamTrackIdRef.current !== activeTrack.id) return;
+
+    const epoch = playbackEpochRef.current;
+
+    if (isPlaying) {
+      if (audio.paused) {
+        playAudioElement(audio, streamUrl)
+          .then(() => {
+            if (playbackEpochRef.current !== epoch || streamTrackIdRef.current !== activeTrack.id) {
+              audio.pause();
+            }
+          })
+          .catch(() => {
+            if (playbackEpochRef.current !== epoch) return;
+            setIsPlaying(false);
+            setPlaybackError("Tap play to start");
+          });
+      }
+    } else {
       audio.pause();
     }
-  }, [isPlaying, streamUrl, audioRef, setIsPlaying]);
+  }, [isPlaying, streamUrl, activeTrack, audioRef, setIsPlaying]);
 
   const handleMediaPlay = useCallback(async () => {
     const audio = audioRef.current;

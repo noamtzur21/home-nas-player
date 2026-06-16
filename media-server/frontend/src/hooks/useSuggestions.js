@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { searchApiUrl } from "../utils/apiBase";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout";
+import { searchVideosForApp } from "../utils/pipedSearch";
 
 function buildSearchQuery(tracks, usedQueries) {
   const artists = [...new Set(tracks.map((track) => track.artist).filter(Boolean))];
@@ -16,12 +19,18 @@ function buildSearchQuery(tracks, usedQueries) {
 }
 
 async function searchVideos(query) {
-  const searchPath = import.meta.env.DEV ? "/search" : "/api/search";
-  const response = await fetch(`${searchPath}?${new URLSearchParams({ q: query })}`);
-  if (!response.ok) throw new Error("Suggestion search failed");
+  try {
+    const response = await fetchWithTimeout(searchApiUrl(query), 12000);
+    if (response.ok) {
+      const payload = await response.json();
+      const results = Array.isArray(payload.results) ? payload.results : [];
+      if (results.length) return results;
+    }
+  } catch {
+    /* try piped fallback below */
+  }
 
-  const payload = await response.json();
-  return Array.isArray(payload.results) ? payload.results : [];
+  return searchVideosForApp(query);
 }
 
 export function useSuggestions(tracks) {

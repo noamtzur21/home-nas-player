@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { darken, extractDominantColor, rgbString } from "../utils/dominantColor";
-import { IconDevices, IconPause, IconPlay, IconSpinner } from "./PlayerIcons.jsx";
+import { IconPause, IconPlay, IconSpinner } from "./PlayerIcons.jsx";
 import "./AudioPlayer.css";
 
 export default function AudioPlayer({
@@ -44,19 +44,14 @@ export default function AudioPlayer({
         </span>
       </button>
 
-      <span className="mini-player-actions">
-        <span className="mini-player-icon-btn" aria-hidden="true">
-          <IconDevices />
-        </span>
-        <button
-          type="button"
-          className="mini-player-icon-btn mini-player-play"
-          aria-label={isPlaying ? "Pause" : "Play"}
-          onClick={onTogglePlayPause}
-        >
-          {isLoading && !isPlaying ? <IconSpinner /> : isPlaying ? <IconPause /> : <IconPlay />}
-        </button>
-      </span>
+      <button
+        type="button"
+        className="mini-player-icon-btn mini-player-play"
+        aria-label={isPlaying ? "Pause" : "Play"}
+        onClick={onTogglePlayPause}
+      >
+        {isLoading && !isPlaying ? <IconSpinner /> : isPlaying ? <IconPause /> : <IconPlay />}
+      </button>
     </div>
   );
 }

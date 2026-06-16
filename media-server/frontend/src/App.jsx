@@ -7,7 +7,6 @@ import HomeScreen from "./components/HomeScreen.jsx";
 import LibraryScreen from "./components/LibraryScreen.jsx";
 import NowPlayingScreen from "./components/NowPlayingScreen.jsx";
 import PlaylistPicker from "./components/PlaylistPicker.jsx";
-import QueueSheet from "./components/QueueSheet.jsx";
 import SearchScreen from "./components/SearchScreen.jsx";
 import UploadProgress from "./components/UploadProgress.jsx";
 import { useAudioPlayback } from "./hooks/useAudioPlayback.js";
@@ -16,6 +15,7 @@ import { usePlaylists } from "./hooks/usePlaylists.js";
 import { useSearch } from "./hooks/useSearch.js";
 import { useSuggestions } from "./hooks/useSuggestions.js";
 import { debugLog, isDebugEnabled } from "./utils/debugLog.js";
+import { findCoverArtForTrack } from "./utils/trackMetadata.js";
 import { hideNativeSplash } from "./utils/nativeShell.js";
 import "./App.css";
 
@@ -31,9 +31,9 @@ export default function App() {
     renamePlaylist,
     addLocalTrack,
     renameTrack,
+    updateTrackArtwork,
     removeTrack,
     getPlaylistTracks,
-    cloudStatus,
   } = usePlaylists();
 
   const {
@@ -61,9 +61,6 @@ export default function App() {
   const [selectedSearchResultId, setSelectedSearchResultId] = useState("");
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
-  const [isQueueOpen, setIsQueueOpen] = useState(false);
-  const [isShuffled, setIsShuffled] = useState(false);
-  const [repeatMode, setRepeatMode] = useState("off"); // "off" | "all" | "one"
 
   useEffect(() => {
     setQueueTracks(tracks);
@@ -74,15 +71,11 @@ export default function App() {
     [queueTracks, activeTrack?.id],
   );
 
-  const canWrap = repeatMode === "all" && queueTracks.length > 0;
-  const hasPrevious = activeIndex > 0 || canWrap;
-  const hasNext = (activeIndex >= 0 && activeIndex < queueTracks.length - 1) || canWrap;
+  const hasPrevious = activeIndex > 0;
+  const hasNext = activeIndex >= 0 && activeIndex < queueTracks.length - 1;
 
   const selectTrack = useCallback((track, { queue, shouldAutoPlay = false } = {}) => {
-    if (queue) {
-      setQueueTracks(queue);
-      setIsShuffled(false);
-    }
+    if (queue) setQueueTracks(queue);
     setActiveTrack(track);
     setActiveTab("home");
     setIsPlaying(shouldAutoPlay);
@@ -91,58 +84,22 @@ export default function App() {
   const goToPrevious = useCallback(() => {
     if (activeIndex > 0) {
       selectTrack(queueTracks[activeIndex - 1], { shouldAutoPlay: true });
-    } else if (canWrap) {
-      selectTrack(queueTracks[queueTracks.length - 1], { shouldAutoPlay: true });
     }
-  }, [activeIndex, canWrap, queueTracks, selectTrack]);
+  }, [activeIndex, queueTracks, selectTrack]);
 
   const goToNext = useCallback(() => {
     if (activeIndex >= 0 && activeIndex < queueTracks.length - 1) {
       selectTrack(queueTracks[activeIndex + 1], { shouldAutoPlay: true });
-    } else if (canWrap) {
-      selectTrack(queueTracks[0], { shouldAutoPlay: true });
     }
-  }, [activeIndex, canWrap, queueTracks, selectTrack]);
-
-  const toggleShuffle = useCallback(() => {
-    setIsShuffled((wasShuffled) => {
-      if (wasShuffled) {
-        setQueueTracks(tracks);
-      } else {
-        setQueueTracks((current) => {
-          const rest = current.filter((track) => track.id !== activeTrack?.id);
-          for (let i = rest.length - 1; i > 0; i -= 1) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [rest[i], rest[j]] = [rest[j], rest[i]];
-          }
-          const head = current.find((track) => track.id === activeTrack?.id);
-          return head ? [head, ...rest] : rest;
-        });
-      }
-      return !wasShuffled;
-    });
-  }, [activeTrack?.id, tracks]);
-
-  const cycleRepeatMode = useCallback(() => {
-    setRepeatMode((mode) => (mode === "off" ? "all" : mode === "all" ? "one" : "off"));
-  }, []);
+  }, [activeIndex, queueTracks, selectTrack]);
 
   const handleTrackEnded = useCallback(() => {
-    if (repeatMode === "one") {
-      const audio = audioRef.current;
-      if (audio) {
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-      }
-      return;
-    }
-
     if (hasNext) {
       goToNext();
     } else {
       setIsPlaying(false);
     }
-  }, [audioRef, goToNext, hasNext, repeatMode]);
+  }, [goToNext, hasNext]);
 
   const {
     isLoading: isAudioLoading,
@@ -199,12 +156,51 @@ export default function App() {
   const handleRemoveTrack = useCallback(
     async (trackId, playlistId) => {
       await removeTrack(trackId, playlistId);
-      if (activeTrack?.id === trackId) {
-        setActiveTrack(null);
-        setIsPlaying(false);
+      if (activeTrack?.id !== trackId) return;
+
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
       }
+
+      setQueueTracks((current) => current.filter((track) => track.id !== trackId));
+      setActiveTrack(null);
+      setIsPlaying(false);
+      setIsPlayerExpanded(false);
     },
-    [removeTrack, activeTrack?.id],
+    [activeTrack?.id, audioRef, removeTrack],
+  );
+
+  const handleRemoveFromPlayer = useCallback(
+    async (trackId) => {
+      await removeTrack(trackId, activePlaylistId);
+      if (activeTrack?.id !== trackId) return;
+
+      const remaining = queueTracks.filter((track) => track.id !== trackId);
+      setIsPlayerExpanded(false);
+
+      if (remaining.length) {
+        selectTrack(remaining[0], { queue: remaining, shouldAutoPlay: isPlaying });
+        return;
+      }
+
+      setActiveTrack(null);
+      setIsPlaying(false);
+    },
+    [activePlaylistId, activeTrack?.id, isPlaying, queueTracks, removeTrack, selectTrack],
+  );
+
+  const handleFindArtwork = useCallback(
+    async (track, playlistId) => {
+      const result = await findCoverArtForTrack({ title: track.title, artist: track.artist });
+      if (!result.ok) return result;
+
+      const updated = await updateTrackArtwork(track.id, result.artwork, playlistId);
+      return updated;
+    },
+    [updateTrackArtwork],
   );
 
   const handleSelectSearchResult = useCallback((result) => {
@@ -230,7 +226,6 @@ export default function App() {
 
   const handleClosePlayer = useCallback(() => {
     setIsPlayerExpanded(false);
-    setIsQueueOpen(false);
   }, []);
 
   const showPlayer = Boolean(activeTrack);
@@ -259,7 +254,6 @@ export default function App() {
         <AppHeader
           activePlaylistName={activePlaylist?.name || "My Playlist"}
           onOpenPlaylists={() => setShowPlaylistPicker(true)}
-          cloudStatus={cloudStatus}
         />
 
         {activeTab === "home" ? (
@@ -272,6 +266,7 @@ export default function App() {
             onAddTrack={handleUploadMp3}
             onRemoveTrack={(trackId) => handleRemoveTrack(trackId, activePlaylistId)}
             onRenameTrack={(trackId, fields) => renameTrack(trackId, fields, activePlaylistId)}
+            onFindArtwork={(track) => handleFindArtwork(track, activePlaylistId)}
             isUploading={Boolean(uploadProgress)}
           />
         ) : null}
@@ -304,6 +299,7 @@ export default function App() {
             onSelectPlaylist={setActivePlaylistId}
             onRemoveTrack={handleRemoveTrack}
             onRenameTrack={renameTrack}
+            onFindArtwork={handleFindArtwork}
             onUploadMp3={handleUploadMp3}
             onSelectTrack={(track, playlistId) => {
               const queue = getPlaylistTracks(playlistId);
@@ -345,22 +341,9 @@ export default function App() {
           hasNext={hasNext}
           hasPrevious={hasPrevious}
           onClose={handleClosePlayer}
-          isShuffled={isShuffled}
-          onToggleShuffle={toggleShuffle}
-          repeatMode={repeatMode}
-          onCycleRepeat={cycleRepeatMode}
-          onOpenQueue={() => setIsQueueOpen(true)}
-          onRenameTrack={(trackId, fields) => renameTrack(trackId, fields, activePlaylistId)}
+          onRemoveTrack={handleRemoveFromPlayer}
         />
       ) : null}
-
-      <QueueSheet
-        isOpen={isQueueOpen}
-        onClose={() => setIsQueueOpen(false)}
-        queueTracks={queueTracks}
-        activeTrackId={activeTrack?.id}
-        onSelectTrack={(track) => selectTrack(track, { shouldAutoPlay: true })}
-      />
 
       {!isPlayerExpanded ? <BottomNav activeTab={activeTab} onTabChange={setActiveTab} /> : null}
 

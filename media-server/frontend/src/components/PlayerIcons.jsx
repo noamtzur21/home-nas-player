@@ -57,6 +57,15 @@ export function IconDots() {
   );
 }
 
+export function IconMinusCircle() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.25" />
+      <path d="M8 12h8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconPlusCircle() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

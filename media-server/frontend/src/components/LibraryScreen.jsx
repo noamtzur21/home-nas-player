@@ -8,6 +8,7 @@ export default function LibraryScreen({
   onSelectPlaylist,
   onRemoveTrack,
   onRenameTrack,
+  onFindArtwork,
   onUploadMp3,
   onSelectTrack,
   activeTrackId,
@@ -53,6 +54,7 @@ export default function LibraryScreen({
           onSelectTrack={(track) => onSelectTrack(track, selectedPlaylist.id)}
           onRemoveTrack={(trackId) => onRemoveTrack(trackId, selectedPlaylist.id)}
           onRenameTrack={(trackId, fields) => onRenameTrack(trackId, fields, selectedPlaylist.id)}
+          onFindArtwork={(track) => onFindArtwork(track, selectedPlaylist.id)}
           onAddTrack={(payload) => onUploadMp3({ ...payload, playlistId: selectedPlaylist.id })}
           title={selectedPlaylist.name}
           isUploading={isUploading}

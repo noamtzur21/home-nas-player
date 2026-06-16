@@ -1,4 +1,22 @@
 import { useState } from "react";
+import { searchApiUrl } from "../utils/apiBase";
+import { fetchWithTimeout } from "../utils/fetchWithTimeout";
+import { searchVideosForApp } from "../utils/pipedSearch";
+
+async function fetchSearchResults(query) {
+  try {
+    const response = await fetchWithTimeout(searchApiUrl(query), 12000);
+    if (response.ok) {
+      const payload = await response.json();
+      const results = Array.isArray(payload.results) ? payload.results : [];
+      if (results.length) return results;
+    }
+  } catch {
+    /* try piped fallback below */
+  }
+
+  return searchVideosForApp(query);
+}
 
 export function useSearch() {
   const [query, setQuery] = useState("");
@@ -18,20 +36,21 @@ export function useSearch() {
     setError("");
 
     try {
-      const params = new URLSearchParams({ q: trimmed });
-      const searchPath = import.meta.env.DEV ? "/search" : "/api/search";
-      const response = await fetch(`${searchPath}?${params.toString()}`);
+      const nextResults = await fetchSearchResults(trimmed);
+      if (!nextResults.length) {
+        setResults([]);
+        setLastQuery(trimmed);
+        setQuery(trimmed);
+        return { ok: true };
+      }
 
-      if (!response.ok) throw new Error(`Search failed`);
-
-      const payload = await response.json();
-      setResults(Array.isArray(payload.results) ? payload.results : []);
+      setResults(nextResults);
       setLastQuery(trimmed);
       setQuery(trimmed);
       return { ok: true };
-    } catch (searchError) {
+    } catch {
       setResults([]);
-      setError("Search failed. Try again.");
+      setError("החיפוש נכשל. נסה שוב.");
     } finally {
       setIsSearching(false);
     }

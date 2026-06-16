@@ -8,6 +8,7 @@ export default function TrackList({
   onSelectTrack,
   onRemoveTrack,
   onRenameTrack,
+  onFindArtwork,
   onAddTrack,
   isUploading,
   title = "Songs",
@@ -35,6 +36,7 @@ export default function TrackList({
               onSelectTrack={onSelectTrack}
               onRemoveTrack={onRemoveTrack}
               onRenameTrack={onRenameTrack}
+              onFindArtwork={onFindArtwork}
             />
           ))}
         </div>

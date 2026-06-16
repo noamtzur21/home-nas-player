@@ -1,20 +1,7 @@
 import { useEffect, useState } from "react";
 import { darken, extractDominantColor, rgbString } from "../utils/dominantColor";
-import {
-  IconChevronDown,
-  IconDevices,
-  IconDots,
-  IconNext,
-  IconPause,
-  IconPlay,
-  IconPlusCircle,
-  IconPrevious,
-  IconQueue,
-  IconRepeat,
-  IconShare,
-  IconShuffle,
-  IconSpinner,
-} from "./PlayerIcons.jsx";
+import { IconChevronDown, IconMinusCircle, IconNext, IconPause, IconPlay, IconPrevious, IconSpinner } from "./PlayerIcons.jsx";
+import SeekSlider from "./SeekSlider.jsx";
 import "./NowPlayingScreen.css";
 
 function formatTime(seconds) {
@@ -39,19 +26,10 @@ export default function NowPlayingScreen({
   hasNext,
   hasPrevious,
   onClose,
-  isShuffled,
-  onToggleShuffle,
-  repeatMode,
-  onCycleRepeat,
-  onOpenQueue,
-  onRenameTrack,
+  onRemoveTrack,
 }) {
   const [tint, setTint] = useState(null);
-  const [isSeeking, setIsSeeking] = useState(false);
-  const [seekTime, setSeekTime] = useState(0);
-  const [isEditing, setIsEditing] = useState(false);
-  const [title, setTitle] = useState(currentTrack?.title || "");
-  const [artist, setArtist] = useState(currentTrack?.artist || "");
+  const [previewTime, setPreviewTime] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,43 +41,19 @@ export default function NowPlayingScreen({
     };
   }, [artworkUrl]);
 
-  useEffect(() => {
-    setTitle(currentTrack?.title || "");
-    setArtist(currentTrack?.artist || "");
-    setIsEditing(false);
-  }, [currentTrack?.id]);
-
   if (!currentTrack) return null;
 
-  const displayTime = isSeeking ? seekTime : currentTime;
+  const displayTime = previewTime ?? currentTime;
   const remaining = Math.max(duration - displayTime, 0);
-  const progress = duration > 0 ? (displayTime / duration) * 100 : 0;
 
   const background = tint
     ? `linear-gradient(180deg, ${rgbString(tint)} 0%, ${rgbString(darken(tint, 0.18))} 45%, #0a0a0a 100%)`
     : "linear-gradient(180deg, #1f4f43 0%, #122621 45%, #0a0a0a 100%)";
 
-  const handleShare = async () => {
-    const text = `${currentTrack.title} — ${currentTrack.artist}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: text, text });
-      } catch {
-        /* user cancelled */
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      /* clipboard unavailable */
-    }
-  };
-
-  const handleSaveEdit = (event) => {
-    event.preventDefault();
-    const result = onRenameTrack?.(currentTrack.id, { title, artist });
-    if (result?.ok) setIsEditing(false);
+  const handleRemove = () => {
+    const confirmed = window.confirm(`להסיר את "${currentTrack.title}" מהפלייליסט?`);
+    if (!confirmed) return;
+    onRemoveTrack?.(currentTrack.id);
   };
 
   return (
@@ -109,98 +63,47 @@ export default function NowPlayingScreen({
           <IconChevronDown />
         </button>
         <span className="now-playing-header-label">{currentTrack.artist}</span>
-        <button type="button" className="now-playing-icon-btn" onClick={() => setIsEditing(true)} aria-label="More options">
-          <IconDots />
-        </button>
+        <span className="now-playing-header-spacer" aria-hidden="true" />
       </div>
 
       <div className="now-playing-art-wrap">
         <img src={artworkUrl} alt="" className="now-playing-art" />
       </div>
 
-      {isEditing ? (
-        <form className="now-playing-edit-form" onSubmit={handleSaveEdit}>
-          <input
-            type="text"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Song title"
-            autoFocus
-          />
-          <input type="text" value={artist} onChange={(event) => setArtist(event.target.value)} placeholder="Artist" />
-          <div className="now-playing-edit-actions">
-            <button type="submit" className="now-playing-edit-save">
-              Save
-            </button>
-            <button type="button" className="now-playing-edit-cancel" onClick={() => setIsEditing(false)}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : (
-        <div className="now-playing-title-row">
-          <div className="now-playing-title-text">
-            <h2>{currentTrack.title}</h2>
-            <p>{currentTrack.artist}</p>
-          </div>
-          {onRenameTrack ? (
-            <button
-              type="button"
-              className="now-playing-icon-btn"
-              onClick={() => setIsEditing(true)}
-              aria-label="Edit song info"
-              title="Fix song name / artist"
-            >
-              <IconPlusCircle />
-            </button>
-          ) : null}
+      <div className="now-playing-title-row">
+        <div className="now-playing-title-text">
+          <h2>{currentTrack.title}</h2>
+          <p>{currentTrack.artist}</p>
         </div>
-      )}
+        {onRemoveTrack ? (
+          <button
+            type="button"
+            className="now-playing-icon-btn now-playing-remove-btn"
+            onClick={handleRemove}
+            aria-label={`Remove ${currentTrack.title} from playlist`}
+          >
+            <IconMinusCircle />
+          </button>
+        ) : null}
+      </div>
 
       {playbackError ? <p className="now-playing-error">{playbackError}</p> : null}
 
       <div className="now-playing-progress-row">
-        <div className="now-playing-progress-wrap">
-          <div className="now-playing-progress-fill" style={{ width: `${progress}%` }} />
-          <input
-            type="range"
-            className="now-playing-progress-slider"
-            min={0}
-            max={duration || 0}
-            step="any"
-            value={displayTime}
-            onInput={(event) => {
-              setIsSeeking(true);
-              setSeekTime(parseFloat(event.target.value));
-            }}
-            onChange={(event) => {
-              setIsSeeking(true);
-              setSeekTime(parseFloat(event.target.value));
-            }}
-            onPointerUp={(event) => {
-              onSeek(parseFloat(event.target.value));
-              setIsSeeking(false);
-            }}
-            aria-label="Seek"
-          />
-        </div>
+        <SeekSlider
+          currentTime={currentTime}
+          duration={duration}
+          onSeek={onSeek}
+          onSeekPreview={setPreviewTime}
+          className="now-playing-seek"
+        />
         <div className="now-playing-time-row">
           <span>{formatTime(displayTime)}</span>
           <span>-{formatTime(remaining)}</span>
         </div>
       </div>
 
-      <div className="now-playing-transport-row">
-        <button
-          type="button"
-          className={`now-playing-toggle-btn${isShuffled ? " active" : ""}`}
-          onClick={onToggleShuffle}
-          aria-pressed={isShuffled}
-          aria-label="Shuffle"
-        >
-          <IconShuffle />
-        </button>
-
+      <div className="now-playing-transport-row now-playing-transport-row--simple">
         <button
           type="button"
           className="now-playing-skip-btn"
@@ -228,28 +131,6 @@ export default function NowPlayingScreen({
           aria-label="Next track"
         >
           <IconNext />
-        </button>
-
-        <button
-          type="button"
-          className={`now-playing-toggle-btn${repeatMode !== "off" ? " active" : ""}`}
-          onClick={onCycleRepeat}
-          aria-pressed={repeatMode !== "off"}
-          aria-label={`Repeat: ${repeatMode}`}
-        >
-          <IconRepeat mode={repeatMode} />
-        </button>
-      </div>
-
-      <div className="now-playing-bottom-row">
-        <span className="now-playing-icon-btn" aria-hidden="true">
-          <IconDevices />
-        </span>
-        <button type="button" className="now-playing-icon-btn" onClick={handleShare} aria-label="Share">
-          <IconShare />
-        </button>
-        <button type="button" className="now-playing-icon-btn" onClick={onOpenQueue} aria-label="Queue">
-          <IconQueue />
         </button>
       </div>
     </div>
