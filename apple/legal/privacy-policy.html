@@ -1,73 +1,169 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Noam Music — מדיניות פרטיות</title>
+    <title>Noam Music — Privacy Policy</title>
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        max-width: 720px;
+        max-width: 760px;
         margin: 0 auto;
-        padding: 32px 20px;
-        line-height: 1.7;
+        padding: 32px 20px 48px;
+        line-height: 1.65;
         color: #111;
         background: #fafafa;
       }
-      h1 { font-size: 1.6rem; }
-      h2 { font-size: 1.1rem; margin-top: 28px; }
+      h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+      h2 { font-size: 1.15rem; margin-top: 2rem; }
       p, li { color: #333; }
       .meta { color: #666; font-size: 0.9rem; }
-      a { color: #1db954; }
+      a { color: #148a42; }
+      ul { padding-left: 1.25rem; }
     </style>
   </head>
   <body>
-    <h1>מדיניות פרטיות — Noam Music</h1>
-    <p class="meta">עדכון אחרון: יוני 2026</p>
+    <h1>Privacy Policy</h1>
+    <p class="meta"><strong>Noam Music</strong> · Last updated: June 16, 2026</p>
 
     <p>
-      Noam Music היא אפליקציית נגן מוזיקה אישית. האפליקציה נועדה לשימוש פרטי
-      ואינה אוספת מידע למטרות שיווק.
+      This Privacy Policy describes how <strong>Noam Music</strong> (“the App”, “we”, “us”) handles
+      information when you use our personal music player on iPhone and on the web. The App is designed
+      for private, personal use. We do not sell your data and we do not use it for advertising.
     </p>
 
-    <h2>מה נשמר במכשיר שלך</h2>
+    <h2>1. Summary</h2>
     <ul>
-      <li>פלייליסטים ומטא-דאטה של שירים (localStorage)</li>
-      <li>קבצי MP3 שהעלית (אחסון מקומי במכשיר — IndexedDB)</li>
-      <li>תמונות שירים (אחסון מקומי)</li>
-    </ul>
-    <p>הנתונים האלה <strong>לא נשלחים לשרת שלנו</strong> ונשארים על המכשיר שלך (בגרסת iOS).</p>
-
-    <h2>מה נשלח לשרת</h2>
-    <ul>
-      <li><strong>חיפוש שירים</strong> — שאילתת החיפוש נשלחת ל-API שלנו (Vercel) כדי למצוא כותרות ו-URLs מ-YouTube. לא נשמר פרופיל משתמש.</li>
+      <li><strong>Your music library and MP3 files stay on your device</strong> (iOS app).</li>
+      <li><strong>Search queries</strong> may be sent to our server and to third-party search services to show song titles and links.</li>
+      <li><strong>No account is required</strong> to use the iOS app.</li>
+      <li><strong>Optional cloud backup</strong> may be available in the web version only, if configured.</li>
     </ul>
 
-    <h2>שירותים של צד שלישי</h2>
+    <h2>2. Information stored on your device</h2>
+    <p>When you use the App, the following data is stored locally on your device:</p>
+    <ul>
+      <li>Playlist names, track titles, artist names, and related metadata</li>
+      <li>Audio files you import (for example MP3 files from the Files app or from a designated app folder on iPhone)</li>
+      <li>Cached album artwork associated with your tracks</li>
+      <li>App preferences stored in local browser or app storage</li>
+    </ul>
     <p>
-      החיפוש משתמש בתוצאות YouTube (דרך שירותי חיפוש). שימוש ב-YouTube כפוף
-      למדיניות של Google/YouTube.
+      On the <strong>iOS app</strong>, this local library data is not uploaded to our servers as part of normal
+      playback or playlist management.
     </p>
 
-    <h2>הרשאות (iOS)</h2>
+    <h2>3. Information sent over the network</h2>
+    <p>We may process the following when you use certain features:</p>
     <ul>
-      <li>גישה לקבצי מוזיקה — רק כשאתה בוחר להעלות MP3 מתיקיית Files</li>
-      <li>ניגון ברקע / CarPlay — לנגן מוזיקה כשהאפליקציה ברקע</li>
+      <li>
+        <strong>Search queries</strong> — When you search for songs, your search text is sent to our API
+        (hosted on Vercel) and may be forwarded to third-party services that index public YouTube metadata.
+        We use this only to return search results (titles, artists, thumbnails, and public video identifiers).
+        We do not create a marketing profile from your searches.
+      </li>
+      <li>
+        <strong>Metadata lookups</strong> — When importing a local file, the App may send the file name or
+        similar text to our search API to suggest title and artist information.
+      </li>
+      <li>
+        <strong>Artwork URLs</strong> — The App may download cover art from third-party URLs (for example
+        YouTube thumbnail servers) and store a cached copy on your device.
+      </li>
+      <li>
+        <strong>External downloader link</strong> — If you choose the download helper in Search, the App may
+        copy a public YouTube URL to your clipboard and open a third-party website in your browser.
+        We do not receive the content of that download.
+      </li>
     </ul>
 
-    <h2>מחיקת נתונים</h2>
+    <h2>4. Optional cloud backup (web version only)</h2>
     <p>
-      מחק שירים מהפלייליסט באפליקציה, או הסר את האפליקציה מהמכשיר — כל הנתונים המקומיים
-      יימחקו.
+      The web version of Noam Music may optionally sync playlists and backup uploaded audio to
+      <strong>Google Firebase</strong> when cloud credentials are configured. This feature is
+      <strong>disabled in the native iOS app</strong>. If enabled on web, data is stored under a
+      service account controlled by the developer, not a personal login you create in the App.
     </p>
 
-    <h2>ילדים</h2>
-    <p>האפליקציה לא מיועדת לילדים מתחת לגיל 13.</p>
+    <h2>5. What we do not collect</h2>
+    <ul>
+      <li>We do not require your name, email, or phone number to use the iOS app.</li>
+      <li>We do not run in-app advertising or ad tracking.</li>
+      <li>We do not knowingly collect precise location data.</li>
+      <li>We do not sell or rent personal information.</li>
+    </ul>
 
-    <h2>יצירת קשר</h2>
+    <h2>6. Third-party services</h2>
+    <p>The App may interact with services operated by others, including:</p>
+    <ul>
+      <li><strong>Vercel</strong> — hosts our search API</li>
+      <li><strong>YouTube / Google</strong> — public metadata and links shown in search results</li>
+      <li><strong>Piped and similar public APIs</strong> — fallback search when our API is unavailable</li>
+      <li><strong>Third-party downloader websites</strong> — opened only if you choose that action</li>
+      <li><strong>Apple iOS / CarPlay</strong> — system media controls and display of now-playing information</li>
+      <li><strong>Google Firebase</strong> — optional cloud backup on web only</li>
+    </ul>
     <p>
-      שאלות על פרטיות:
+      Your use of those services is subject to their own terms and privacy policies. We are not
+      responsible for their practices.
+    </p>
+
+    <h2>7. iOS permissions</h2>
+    <ul>
+      <li><strong>Files / local storage</strong> — used only when you import audio files you select or scan from your app folder.</li>
+      <li><strong>Background audio &amp; CarPlay</strong> — used to continue playback and show media controls while driving or when the App is in the background.</li>
+      <li><strong>Network access</strong> — used for search and artwork; not required for playing imported files already on your device.</li>
+    </ul>
+
+    <h2>8. Data retention</h2>
+    <ul>
+      <li><strong>On your device</strong> — kept until you delete tracks, playlists, or uninstall the App.</li>
+      <li><strong>Search requests</strong> — we do not intentionally maintain long-term logs tied to your identity. Server infrastructure providers may retain short-lived technical logs under their policies.</li>
+      <li><strong>Cloud backup (web)</strong> — retained until deleted through that feature or by the developer disabling the service.</li>
+    </ul>
+
+    <h2>9. Your choices and rights</h2>
+    <p>You can:</p>
+    <ul>
+      <li>Delete individual tracks or playlists inside the App</li>
+      <li>Remove all local App data by deleting the App from your device</li>
+      <li>Avoid using Search or external downloader features if you do not want network requests</li>
+      <li>Contact us to ask questions about this policy (see Section 12)</li>
+    </ul>
+    <p>
+      Depending on where you live, you may have additional privacy rights. Because the iOS app stores
+      personal content locally and does not require an account, most requests can be fulfilled by
+      deleting data on your device.
+    </p>
+
+    <h2>10. Children</h2>
+    <p>
+      The App is not directed to children under 13, and we do not knowingly collect personal
+      information from children. If you believe a child has provided us information, contact us and
+      we will take appropriate steps to delete it.
+    </p>
+
+    <h2>11. Security</h2>
+    <p>
+      We use reasonable technical measures appropriate for a personal utility app. No method of
+      transmission or storage is 100% secure. You are responsible for securing your device and the
+      files you import.
+    </p>
+
+    <h2>12. Changes to this policy</h2>
+    <p>
+      We may update this Privacy Policy from time to time. The “Last updated” date at the top will
+      change when we do. Continued use of the App after an update means you accept the revised policy.
+    </p>
+
+    <h2>13. Contact</h2>
+    <p>
+      Privacy questions:
       <a href="mailto:noamtzurt@gmail.com">noamtzurt@gmail.com</a>
+    </p>
+    <p>
+      Support page:
+      <a href="https://noamtzur21.github.io/home-nas-player/">https://noamtzur21.github.io/home-nas-player/</a>
     </p>
   </body>
 </html>
