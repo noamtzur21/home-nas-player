@@ -1,8 +1,15 @@
+import { useRef } from "react";
 import "./SearchBar.css";
 
 export default function SearchBar({ query, onQueryChange, onSubmit, isSearching }) {
+  const inputRef = useRef(null);
+
   const handleSubmit = (event) => {
     event.preventDefault();
+    if (!query.trim()) {
+      inputRef.current?.focus();
+      return;
+    }
     onSubmit(query);
   };
 
@@ -12,6 +19,7 @@ export default function SearchBar({ query, onQueryChange, onSubmit, isSearching 
         ⌕
       </span>
       <input
+        ref={inputRef}
         type="search"
         value={query}
         onChange={(event) => onQueryChange(event.target.value)}

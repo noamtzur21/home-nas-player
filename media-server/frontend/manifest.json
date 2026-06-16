@@ -1,21 +1,26 @@
 {
-    "short_name": "NAS Player",
-    "name": "Home NAS Music Player",
-    "icons": [
-      {
-        "src": "https://placehold.co/192x192/1db954/ffffff?text=Music",
-        "type": "image/png",
-        "sizes": "192x192"
-      },
-      {
-        "src": "https://placehold.co/512x512/512x512/1db954/ffffff?text=Music",
-        "type": "image/png",
-        "sizes": "512x512"
-      }
-    ],
-    "start_url": ".",
-    "background_color": "#121212",
-    "theme_color": "#1db954",
-    "display": "standalone",
-    "orientation": "portrait"
-  }
+  "short_name": "Noam Spotify",
+  "name": "Noam Spotify",
+  "description": "Your personal music player with offline playback",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/1db954/ffffff?text=NS",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://placehold.co/512x512/1db954/ffffff?text=NS",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "scope": ".",
+  "background_color": "#050505",
+  "theme_color": "#1db954",
+  "display": "standalone",
+  "orientation": "portrait"
+}

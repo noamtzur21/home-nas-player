@@ -10,9 +10,8 @@ export function useSearch() {
   const runSearch = async (searchQuery) => {
     const trimmed = searchQuery.trim();
     if (!trimmed) {
-      setError("Enter a search term.");
-      setResults([]);
-      return;
+      setError("");
+      return { ok: false, empty: true };
     }
 
     setIsSearching(true);
@@ -29,6 +28,7 @@ export function useSearch() {
       setResults(Array.isArray(payload.results) ? payload.results : []);
       setLastQuery(trimmed);
       setQuery(trimmed);
+      return { ok: true };
     } catch (searchError) {
       setResults([]);
       setError("Search failed. Try again.");

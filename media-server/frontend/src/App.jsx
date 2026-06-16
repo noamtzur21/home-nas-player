@@ -1,30 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AddTrackForm from "./components/AddTrackForm.jsx";
+import AppHeader from "./components/AppHeader.jsx";
 import AudioPlayer from "./components/AudioPlayer.jsx";
-import SearchBar from "./components/SearchBar.jsx";
-import SearchResults from "./components/SearchResults.jsx";
-import Sidebar from "./components/Sidebar.jsx";
-import TrackList from "./components/TrackList.jsx";
-import { useAudioPlayback } from "./hooks/useAudioPlayback.js";
-import { usePlaylist } from "./hooks/usePlaylist.js";
-import { useSearch } from "./hooks/useSearch.js";
-import { debugLog, isDebugEnabled } from "./utils/debugLog.js";
-import { copyYoutubeUrl } from "./utils/youtubeUrl.js";
-import { downloadSearchResultToDevice } from "./utils/downloadAudio.js";
+import BottomNav from "./components/BottomNav.jsx";
 import DebugPanel from "./components/DebugPanel.jsx";
+import HomeScreen from "./components/HomeScreen.jsx";
+import LibraryScreen from "./components/LibraryScreen.jsx";
+import PlaylistPicker from "./components/PlaylistPicker.jsx";
+import SearchScreen from "./components/SearchScreen.jsx";
+import UploadProgress from "./components/UploadProgress.jsx";
+import { useAudioPlayback } from "./hooks/useAudioPlayback.js";
+import { usePersistentAudio } from "./hooks/usePersistentAudio.js";
+import { usePlaylists } from "./hooks/usePlaylists.js";
+import { useSearch } from "./hooks/useSearch.js";
+import { useSuggestions } from "./hooks/useSuggestions.js";
+import { debugLog, isDebugEnabled } from "./utils/debugLog.js";
 import "./App.css";
 
 export default function App() {
-  // חילצנו פה את פונקציית ההורדה ואת הסטוסים של הטעינה לאופליין מההוק המעודכן
-  const { 
-    tracks, 
-    addTrack, 
-    removeTrack, 
-    downloadTrack, 
-    markDownloaded,
-    downloadingIds 
-  } = usePlaylist();
-  
+  const {
+    playlists,
+    activePlaylist,
+    activePlaylistId,
+    tracks,
+    setActivePlaylistId,
+    createNewPlaylist,
+    deletePlaylistById,
+    renamePlaylist,
+    addLocalTrack,
+    removeTrack,
+    getPlaylistTracks,
+  } = usePlaylists();
+
   const {
     query,
     setQuery,
@@ -37,97 +43,49 @@ export default function App() {
     loadMore,
   } = useSearch();
 
-  const { audioRef, playTrackWithGesture } = useAudioPlayback();
+  const { suggestions, isLoading: isLoadingSuggestions, error: suggestionsError, refresh, hasPlaylist } =
+    useSuggestions(tracks);
 
+  const { audioRef } = useAudioPlayback();
+
+  const [activeTab, setActiveTab] = useState("home");
+  const [showPlaylistPicker, setShowPlaylistPicker] = useState(false);
   const [activeTrack, setActiveTrack] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(true);
-  const [playlistMessage, setPlaylistMessage] = useState("");
+  const [queueTracks, setQueueTracks] = useState([]);
   const [selectedSearchResultId, setSelectedSearchResultId] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(null);
+
+  useEffect(() => {
+    setQueueTracks(tracks);
+  }, [activePlaylistId, tracks]);
 
   const activeIndex = useMemo(
-    () => tracks.findIndex((track) => track.id === activeTrack?.id),
-    [tracks, activeTrack?.id]
+    () => queueTracks.findIndex((track) => track.id === activeTrack?.id),
+    [queueTracks, activeTrack?.id],
   );
 
   const hasPrevious = activeIndex > 0;
-  const hasNext = activeIndex >= 0 && activeIndex < tracks.length - 1;
+  const hasNext = activeIndex >= 0 && activeIndex < queueTracks.length - 1;
 
-  const selectTrack = useCallback(async (track, { shouldAutoPlay = false } = {}) => {
+  const selectTrack = useCallback((track, { queue, shouldAutoPlay = false } = {}) => {
+    if (queue) setQueueTracks(queue);
     setActiveTrack(track);
-
-    if (!shouldAutoPlay) {
-      setIsPlaying(false);
-      return;
-    }
-
-    const { ok } = await playTrackWithGesture(track);
-    setIsPlaying(ok);
-  }, [playTrackWithGesture]);
-
-  const handleAddTrack = useCallback(async (values) => {
-    const result = addTrack(values);
-    if (result.ok) {
-      setPlaylistMessage("");
-      await selectTrack(result.track, { shouldAutoPlay: true });
-    }
-    return result;
-  }, [addTrack, selectTrack]);
-
-  const handleRemoveTrack = useCallback((id) => {
-    removeTrack(id);
-    if (activeTrack?.id === id) {
-      setActiveTrack(null);
-      setIsPlaying(false);
-    }
-  }, [removeTrack, activeTrack?.id]);
-
-  const handleSelectSearchResult = useCallback((result) => {
-    setSelectedSearchResultId(result.id);
+    setActiveTab("home");
+    setIsPlaying(shouldAutoPlay);
   }, []);
 
-  const handleDownloadSearchResult = useCallback(
-    async (result) => {
-      await downloadSearchResultToDevice(result);
-
-      let track = tracks.find((t) => t.streamId === result.id || t.id === result.id);
-      if (!track) {
-        const addResult = addTrack({
-          title: result.title,
-          artist: result.artist,
-          streamId: result.id,
-          artwork: result.thumbnail,
-        });
-        if (!addResult.ok) throw new Error(addResult.error);
-        track = addResult.track;
-      }
-
-      markDownloaded(track.id);
-      const playableTrack = { ...track, isDownloaded: true };
-      await selectTrack(playableTrack, { shouldAutoPlay: true });
-      setPlaylistMessage(`Playing offline: ${result.title}`);
-    },
-    [tracks, addTrack, markDownloaded, selectTrack],
-  );
-
-  useEffect(() => {
-    if (results.length > 0) {
-      setSelectedSearchResultId(results[0].id);
-      copyYoutubeUrl(results[0]).catch(() => {});
-    } else {
-      setSelectedSearchResultId("");
-    }
-  }, [results]);
-
-  const goToPrevious = useCallback(async () => {
+  const goToPrevious = useCallback(() => {
     if (!hasPrevious) return;
-    await selectTrack(tracks[activeIndex - 1], { shouldAutoPlay: true });
-  }, [activeIndex, hasPrevious, selectTrack, tracks]);
+    const track = queueTracks[activeIndex - 1];
+    selectTrack(track, { shouldAutoPlay: true });
+  }, [activeIndex, hasPrevious, queueTracks, selectTrack]);
 
-  const goToNext = useCallback(async () => {
+  const goToNext = useCallback(() => {
     if (!hasNext) return;
-    await selectTrack(tracks[activeIndex + 1], { shouldAutoPlay: true });
-  }, [activeIndex, hasNext, selectTrack, tracks]);
+    const track = queueTracks[activeIndex + 1];
+    selectTrack(track, { shouldAutoPlay: true });
+  }, [activeIndex, hasNext, queueTracks, selectTrack]);
 
   const handleTrackEnded = useCallback(() => {
     if (hasNext) {
@@ -137,6 +95,81 @@ export default function App() {
     }
   }, [goToNext, hasNext]);
 
+  const {
+    isLoading: isAudioLoading,
+    playbackError,
+    currentTime,
+    duration,
+    artworkUrl,
+    seekTo,
+    togglePlayPause,
+  } = usePersistentAudio({
+    audioRef,
+    activeTrack,
+    isPlaying,
+    setIsPlaying,
+    onTrackEnded: handleTrackEnded,
+    hasNext,
+    hasPrevious,
+    onNext: goToNext,
+    onPrevious: goToPrevious,
+    queueIndex: activeIndex >= 0 ? activeIndex : 0,
+    queueSize: queueTracks.length,
+    playlistName: activePlaylist?.name || "Noam Spotify",
+  });
+
+  const handlePlayFromQueue = useCallback(
+    (track, queue) => selectTrack(track, { queue, shouldAutoPlay: true }),
+    [selectTrack],
+  );
+
+  const handleUploadMp3 = useCallback(
+    async (payload) => {
+      setUploadProgress({ percent: 0, label: "Starting..." });
+
+      const result = await addLocalTrack({
+        ...payload,
+        onProgress: setUploadProgress,
+      });
+
+      setUploadProgress(null);
+
+      if (result.ok) {
+        const queue = getPlaylistTracks(payload.playlistId || activePlaylistId);
+        handlePlayFromQueue(result.track, queue);
+        return result;
+      }
+
+      setUploadProgress({ percent: 0, label: result.error || "Upload failed" });
+      setTimeout(() => setUploadProgress(null), 2500);
+      return result;
+    },
+    [addLocalTrack, getPlaylistTracks, activePlaylistId, handlePlayFromQueue],
+  );
+
+  const handleRemoveTrack = useCallback(
+    async (trackId, playlistId) => {
+      await removeTrack(trackId, playlistId);
+      if (activeTrack?.id === trackId) {
+        setActiveTrack(null);
+        setIsPlaying(false);
+      }
+    },
+    [removeTrack, activeTrack?.id],
+  );
+
+  const handleSelectSearchResult = useCallback((result) => {
+    setSelectedSearchResultId(result.id);
+  }, []);
+
+  useEffect(() => {
+    if (results.length > 0) {
+      setSelectedSearchResultId(results[0].id);
+    } else {
+      setSelectedSearchResultId("");
+    }
+  }, [results]);
+
   useEffect(() => {
     debugLog("info", "App mounted", {
       debug: isDebugEnabled(),
@@ -145,83 +178,116 @@ export default function App() {
     });
   }, []);
 
+  const showPlayer = Boolean(activeTrack);
+
+  const shellClass = [
+    "app-shell",
+    showPlayer ? "app-shell--with-player" : "",
+    isDebugEnabled() ? "app-shell--debug" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`app-shell${activeTrack ? " app-shell--with-player" : ""}${isDebugEnabled() ? " app-shell--debug" : ""}`}>
+    <div className={shellClass}>
       <DebugPanel />
-      <audio ref={audioRef} playsInline preload="auto" className="global-audio" aria-hidden="true" />
-      <Sidebar
-        tracks={tracks}
-        activeTrackId={activeTrack?.id}
-        onSelectTrack={(track) => selectTrack(track, { shouldAutoPlay: true })}
-        onRemoveTrack={handleRemoveTrack}
-        onAddClick={() => setShowAddForm(true)}
+      <UploadProgress progress={uploadProgress} />
+      <audio
+        ref={audioRef}
+        playsInline
+        preload="auto"
+        className="global-audio"
+        aria-hidden="true"
       />
 
       <main className="main-content">
-        <header className="hero">
-          <p className="eyebrow">Home NAS Player</p>
-          <h1>Your private playlist</h1>
-          <p className="subtitle">
-            Search a song, download it to your device, and play offline with full controls.
-          </p>
-        </header>
-
-        <SearchBar
-          query={query}
-          onQueryChange={setQuery}
-          onSubmit={runSearch}
-          isSearching={isSearching}
+        <AppHeader
+          activePlaylistName={activePlaylist?.name || "My Playlist"}
+          onOpenPlaylists={() => setShowPlaylistPicker(true)}
         />
 
-        <SearchResults
-          query={lastQuery}
-          results={results}
-          isSearching={isSearching}
-          error={searchError}
-          selectedResultId={selectedSearchResultId}
-          onSelectResult={handleSelectSearchResult}
-          onDownloadAndPlay={handleDownloadSearchResult}
-          hasMore={hasMore}
-          onLoadMore={loadMore}
-        />
-
-        {playlistMessage ? <p className="playlist-message">{playlistMessage}</p> : null}
-
-        {showAddForm ? (
-          <AddTrackForm
-            onSubmit={handleAddTrack}
-            onCancel={tracks.length > 0 ? () => setShowAddForm(false) : undefined}
+        {activeTab === "home" ? (
+          <HomeScreen
+            activePlaylist={activePlaylist}
+            tracks={tracks}
+            activeTrackId={activeTrack?.id}
+            onSelectTrack={(track) => handlePlayFromQueue(track, tracks)}
+            onOpenPlaylist={() => setShowPlaylistPicker(true)}
+            onAddTrack={handleUploadMp3}
+            onRemoveTrack={(trackId) => handleRemoveTrack(trackId, activePlaylistId)}
+            isUploading={Boolean(uploadProgress)}
           />
-        ) : (
-          <button type="button" className="show-form-btn" onClick={() => setShowAddForm(true)}>
-            + Add another track
-          </button>
-        )}
+        ) : null}
 
-        {/* הזרקנו פה בצורה מלאה את הפרופס התומכים בהורדה לתוך רשימת השירים */}
-        <TrackList
-          tracks={tracks}
-          activeTrackId={activeTrack?.id}
-          onSelectTrack={(track) => selectTrack(track, { shouldAutoPlay: true })}
-          downloadTrack={downloadTrack}
-          downloadingIds={downloadingIds}
-        />
+        {activeTab === "search" ? (
+          <SearchScreen
+            query={query}
+            onQueryChange={setQuery}
+            onSubmit={runSearch}
+            isSearching={isSearching}
+            lastQuery={lastQuery}
+            results={results}
+            searchError={searchError}
+            selectedResultId={selectedSearchResultId}
+            onSelectResult={handleSelectSearchResult}
+            hasMore={hasMore}
+            onLoadMore={loadMore}
+            suggestions={suggestions}
+            isLoadingSuggestions={isLoadingSuggestions}
+            suggestionsError={suggestionsError}
+            onRefreshSuggestions={refresh}
+            showSuggestions={hasPlaylist}
+          />
+        ) : null}
+
+        {activeTab === "library" ? (
+          <LibraryScreen
+            playlists={playlists}
+            activePlaylistId={activePlaylistId}
+            onSelectPlaylist={setActivePlaylistId}
+            onRemoveTrack={handleRemoveTrack}
+            onUploadMp3={handleUploadMp3}
+            onSelectTrack={(track, playlistId) => {
+              const queue = getPlaylistTracks(playlistId);
+              handlePlayFromQueue(track, queue);
+            }}
+            activeTrackId={activeTrack?.id}
+            onCreatePlaylist={createNewPlaylist}
+            isUploading={Boolean(uploadProgress)}
+          />
+        ) : null}
       </main>
 
-      {activeTrack ? (
+      {showPlayer ? (
         <AudioPlayer
-          key={activeTrack.streamId || activeTrack.id}
-          audioRef={audioRef}
           currentTrack={activeTrack}
+          artworkUrl={artworkUrl}
           isPlaying={isPlaying}
-          setIsPlaying={setIsPlaying}
+          isLoading={isAudioLoading}
+          playbackError={playbackError}
+          currentTime={currentTime}
+          duration={duration}
+          onTogglePlayPause={togglePlayPause}
+          onSeek={seekTo}
           onNext={goToNext}
           onPrevious={goToPrevious}
           hasNext={hasNext}
           hasPrevious={hasPrevious}
-          onTrackEnded={handleTrackEnded}
         />
       ) : null}
+
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <PlaylistPicker
+        isOpen={showPlaylistPicker}
+        onClose={() => setShowPlaylistPicker(false)}
+        playlists={playlists}
+        activePlaylistId={activePlaylistId}
+        onSelectPlaylist={setActivePlaylistId}
+        onCreatePlaylist={createNewPlaylist}
+        onDeletePlaylist={deletePlaylistById}
+        onRenamePlaylist={renamePlaylist}
+      />
     </div>
   );
 }

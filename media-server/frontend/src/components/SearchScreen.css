@@ -1,0 +1,15 @@
+.search-screen {
+  display: grid;
+  gap: 8px;
+}
+
+.search-screen-intro h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.search-screen-intro p {
+  margin: 4px 0 16px;
+  color: rgba(255, 255, 255, 0.55);
+}

@@ -1,0 +1,86 @@
+.home-screen {
+  display: grid;
+  gap: 20px;
+}
+
+.home-playlist-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-playlist-switch {
+  display: grid;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+}
+
+.home-playlist-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1db954;
+}
+
+.home-playlist-switch strong {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.home-playlist-count {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.home-empty {
+  text-align: center;
+  padding: 48px 24px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.home-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  background: rgba(29, 185, 84, 0.15);
+  color: #1db954;
+}
+
+.home-empty h3 {
+  margin: 0 0 8px;
+}
+
+.home-empty p {
+  margin: 0 0 20px;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 36ch;
+  margin-inline: auto;
+}
+
+.home-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 700;
+}
+
+.home-btn--primary {
+  background: #1db954;
+  color: #000;
+}

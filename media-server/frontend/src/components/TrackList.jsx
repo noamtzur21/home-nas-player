@@ -1,62 +1,58 @@
+import AddMp3Button from "./AddMp3Button.jsx";
+import TrackArtwork from "./TrackArtwork.jsx";
 import "./TrackList.css";
 
-export default function TrackList({ 
-  tracks, 
-  activeTrackId, 
-  onSelectTrack, 
-  downloadTrack, 
-  downloadingIds 
+export default function TrackList({
+  tracks,
+  activeTrackId,
+  onSelectTrack,
+  onRemoveTrack,
+  onAddTrack,
+  isUploading,
+  title = "Songs",
 }) {
   return (
     <section className="track-panel">
       <div className="track-panel-header">
-        <h2>Now in your library</h2>
-        <span>{tracks.length} tracks</span>
+        <h2>{title}</h2>
+        <div className="track-panel-header-actions">
+          <span>{tracks.length} tracks</span>
+          {onAddTrack ? <AddMp3Button onUpload={onAddTrack} disabled={isUploading} /> : null}
+        </div>
       </div>
 
       {tracks.length === 0 ? (
-        <p className="track-panel-empty">
-          Your playlist is empty. Use the sidebar or the form above to save your first track.
-        </p>
+        <p className="track-panel-empty">No songs yet. Tap + to add an MP3.</p>
       ) : (
         <div className="track-list">
           {tracks.map((track, index) => {
             const isActive = track.id === activeTrackId;
-            const isDownloading = downloadingIds?.has(track.id);
-            const isDownloaded = track.isDownloaded;
 
             return (
-              <div 
-                key={track.id} 
-                className={`track-row ${isActive ? "active" : ""}`}
-              >
-                {/* אזור הניגון - לחיצה עליו מפעילה את השיר */}
-                <div 
-                  className="track-clickable-area" 
-                  onClick={() => onSelectTrack(track)}
-                >
+              <div key={track.id} className={`track-row${isActive ? " active" : ""}`}>
+                <button type="button" className="track-clickable-area" onClick={() => onSelectTrack(track)}>
                   <span className="track-index">{index + 1}</span>
-                  <img src={track.artwork} alt="" className="track-art" />
+                  <TrackArtwork track={track} className="track-art" />
                   <div className="track-meta">
                     <strong>{track.title}</strong>
                     <span>{track.artist}</span>
                   </div>
-                </div>
+                </button>
 
-                {/* אזור הפעולות - כפתור הורדה אופליין */}
                 <div className="track-actions">
-                  <button
-                    type="button"
-                    className={`download-btn ${isDownloaded ? "downloaded" : ""} ${isDownloading ? "spinning" : ""}`}
-                    disabled={isDownloaded || isDownloading}
-                    onClick={() => downloadTrack(track)}
-                    title={isDownloaded ? "Available offline" : "Download for offline"}
-                  >
-                    {isDownloading ? "⏳" : isDownloaded ? "✅" : "⬇️"}
+                  {onRemoveTrack ? (
+                    <button
+                      type="button"
+                      className="track-remove-btn"
+                      onClick={() => onRemoveTrack(track.id)}
+                      aria-label={`Remove ${track.title}`}
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                  <button type="button" className="play-badge" onClick={() => onSelectTrack(track)}>
+                    {isActive ? "Playing" : "Play"}
                   </button>
-                  <span className="play-badge" onClick={() => onSelectTrack(track)}>
-                    {isActive ? "Now Playing" : "Play"}
-                  </span>
                 </div>
               </div>
             );

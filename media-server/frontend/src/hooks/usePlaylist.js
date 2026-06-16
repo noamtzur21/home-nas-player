@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { deleteOfflineTrack } from "../utils/offlineStorage";
-import { downloadSearchResultToDevice } from "../utils/downloadAudio";
+import { deleteOfflineTrack, saveTrackBlob } from "../utils/offlineStorage";
 
 const STORAGE_KEY = "media-server-playlist";
 const DEFAULT_ARTWORK = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80";
 
-export function createTrack({ title, artist, sourceUrl, streamId, artwork }) {
+export function createTrack({ title, artist, sourceUrl, streamId, artwork, isLocal = false }) {
   return {
     id: streamId || crypto.randomUUID(),
     title: title.trim(),
@@ -13,7 +12,8 @@ export function createTrack({ title, artist, sourceUrl, streamId, artwork }) {
     sourceUrl: sourceUrl?.trim() || null,
     streamId: streamId?.trim() || null,
     artwork: artwork || DEFAULT_ARTWORK,
-    isDownloaded: false,
+    isDownloaded: isLocal,
+    isLocal,
     createdAt: Date.now(),
   };
 }
@@ -35,7 +35,6 @@ function savePlaylist(tracks) {
 
 export function usePlaylist() {
   const [tracks, setTracks] = useState(loadPlaylist);
-  const [downloadingIds, setDownloadingIds] = useState(new Set());
 
   useEffect(() => {
     savePlaylist(tracks);
@@ -50,44 +49,53 @@ export function usePlaylist() {
     if (!trimmedTitle || !trimmedArtist) return { ok: false, error: "Title and artist are required." };
     if (!trimmedUrl && !trimmedStreamId) return { ok: false, error: "A media URL or stream id is required." };
 
-    const alreadySaved = tracks.some(track => (trimmedStreamId && track.streamId === trimmedStreamId) || (trimmedUrl && track.sourceUrl === trimmedUrl));
+    const alreadySaved = tracks.some(
+      (track) =>
+        (trimmedStreamId && track.streamId === trimmedStreamId) ||
+        (trimmedUrl && track.sourceUrl === trimmedUrl),
+    );
     if (alreadySaved) return { ok: false, error: "This track is already in your playlist." };
 
-    const track = createTrack({ title: trimmedTitle, artist: trimmedArtist, sourceUrl: trimmedUrl, streamId: trimmedStreamId, artwork });
-    setTracks(current => [track, ...current]);
+    const track = createTrack({
+      title: trimmedTitle,
+      artist: trimmedArtist,
+      sourceUrl: trimmedUrl,
+      streamId: trimmedStreamId,
+      artwork,
+    });
+    setTracks((current) => [track, ...current]);
+    return { ok: true, track };
+  };
+
+  const addLocalTrack = async ({ file, title, artist }) => {
+    if (!file) return { ok: false, error: "No file selected." };
+
+    const trimmedTitle = title?.trim() || file.name.replace(/\.[^.]+$/, "");
+    const trimmedArtist = artist?.trim() || "Local upload";
+    const id = crypto.randomUUID();
+
+    await saveTrackBlob(id, file);
+
+    const track = {
+      id,
+      title: trimmedTitle,
+      artist: trimmedArtist,
+      sourceUrl: null,
+      streamId: null,
+      artwork: DEFAULT_ARTWORK,
+      isDownloaded: true,
+      isLocal: true,
+      createdAt: Date.now(),
+    };
+
+    setTracks((current) => [track, ...current]);
     return { ok: true, track };
   };
 
   const removeTrack = async (id) => {
     await deleteOfflineTrack(id);
-    setTracks(current => current.filter(track => track.id !== id));
+    setTracks((current) => current.filter((track) => track.id !== id));
   };
 
-  const markDownloaded = (id) => {
-    setTracks((current) =>
-      current.map((track) => (track.id === id ? { ...track, isDownloaded: true } : track)),
-    );
-  };
-
-  const downloadTrack = async (track) => {
-    if (track.isDownloaded) return;
-    setDownloadingIds((current) => new Set([...current, track.id]));
-
-    try {
-      await downloadSearchResultToDevice({
-        id: track.streamId || track.id,
-        title: track.title,
-        artist: track.artist,
-      });
-      markDownloaded(track.id);
-    } finally {
-      setDownloadingIds((current) => {
-        const next = new Set(current);
-        next.delete(track.id);
-        return next;
-      });
-    }
-  };
-
-  return { tracks, addTrack, removeTrack, downloadTrack, markDownloaded, downloadingIds };
+  return { tracks, addTrack, addLocalTrack, removeTrack };
 }

@@ -11,6 +11,17 @@ export default defineConfig(({ mode }) => ({
       ? [
           VitePWA({
             registerType: "autoUpdate",
+            manifest: {
+              name: "Noam Spotify",
+              short_name: "Noam Spotify",
+              description: "Your personal music player with offline playback",
+              categories: ["music", "entertainment"],
+              display: "standalone",
+              background_color: "#050505",
+              theme_color: "#1db954",
+              scope: "/",
+              start_url: "/",
+            },
             workbox: {
               cleanupOutdatedCaches: true,
               runtimeCaching: [],

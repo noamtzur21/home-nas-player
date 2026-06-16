@@ -9,13 +9,10 @@ export default function SearchResults({
   error,
   selectedResultId,
   onSelectResult,
-  onDownloadAndPlay,
   hasMore,
   onLoadMore,
 }) {
   const [copyFeedback, setCopyFeedback] = useState("");
-  const [downloadFeedback, setDownloadFeedback] = useState("");
-  const [isDownloading, setIsDownloading] = useState(false);
 
   if (!query && results.length === 0 && !error) {
     return null;
@@ -33,23 +30,6 @@ export default function SearchResults({
     } catch {
       setCopyFeedback("Copy failed");
       setTimeout(() => setCopyFeedback(""), 2000);
-    }
-  };
-
-  const handleDownload = async () => {
-    if (!selected || isDownloading) return;
-
-    setIsDownloading(true);
-    setDownloadFeedback("Downloading to device...");
-
-    try {
-      await onDownloadAndPlay(selected);
-      setDownloadFeedback("Ready — playing from offline storage");
-    } catch (err) {
-      setDownloadFeedback(err.message?.slice(0, 80) || "Download failed");
-    } finally {
-      setIsDownloading(false);
-      setTimeout(() => setDownloadFeedback(""), 5000);
     }
   };
 
@@ -74,24 +54,12 @@ export default function SearchResults({
           <div className="search-url-actions">
             <button
               type="button"
-              className="result-download-btn"
-              onClick={handleDownload}
-              disabled={isDownloading}
-            >
-              {isDownloading ? "Downloading..." : "Download & Play"}
-            </button>
-            <button
-              type="button"
               className="result-copy-btn result-copy-btn--primary"
               onClick={() => selected && handleCopy(selected)}
             >
               {copyFeedback || "Copy URL"}
             </button>
-            <a href={selectedUrl} target="_blank" rel="noreferrer" className="search-open-link">
-              Open in YouTube
-            </a>
           </div>
-          {downloadFeedback ? <p className="search-download-status">{downloadFeedback}</p> : null}
         </div>
       ) : null}
 

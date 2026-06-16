@@ -1,0 +1,146 @@
+.library-screen {
+  display: grid;
+  gap: 20px;
+}
+
+.library-back {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  padding: 0;
+  justify-self: start;
+}
+
+.library-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.library-header p {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.library-create {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+.library-create input {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  padding: 14px 16px;
+  outline: none;
+}
+
+.library-create input:focus {
+  border-color: rgba(29, 185, 84, 0.45);
+}
+
+.library-create button {
+  border: 0;
+  border-radius: 14px;
+  background: #1db954;
+  color: #000;
+  font-weight: 700;
+  padding: 0 20px;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.library-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  text-align: left;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.library-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.library-card.active {
+  border-color: rgba(29, 185, 84, 0.45);
+  background: rgba(29, 185, 84, 0.08);
+}
+
+.library-card-cover {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.library-card-meta strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.library-card-meta span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.85rem;
+}
+
+.library-card-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #1db954;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.library-detail-hero {
+  padding: 32px 24px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.library-detail-hero p {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+}
+
+.library-detail-hero h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.library-detail-hero--compact {
+  padding: 20px 18px;
+}
+
+.library-detail-hero--compact h2 {
+  font-size: clamp(1.4rem, 4vw, 1.9rem);
+}
+
+.library-detail-hero span {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}

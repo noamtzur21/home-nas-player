@@ -1,0 +1,45 @@
+.mp3-upload-panel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 22px;
+  margin-bottom: 18px;
+}
+
+.mp3-upload-header h2 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.mp3-upload-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.9rem;
+}
+
+.mp3-upload-actions {
+  margin-top: 16px;
+}
+
+.mp3-upload-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 14px 22px;
+  background: #1db954;
+  color: #000;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
+
+.mp3-upload-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.mp3-upload-message {
+  margin: 12px 0 0;
+  color: #1db954;
+  font-size: 0.9rem;
+}
