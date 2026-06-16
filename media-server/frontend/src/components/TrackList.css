@@ -117,6 +117,7 @@
   display: none;
 }
 
+.track-rename-btn,
 .track-remove-btn {
   border: 0;
   width: 32px;
@@ -125,6 +126,89 @@
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.track-rename-btn {
+  font-size: 0.95rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.track-rename-btn:hover {
+  background: rgba(29, 185, 84, 0.2);
+  color: #1db954;
+}
+
+.track-row--editing {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+}
+
+.track-edit-fields {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.track-edit-fields input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  padding: 7px 10px;
+  font-size: 0.88rem;
+}
+
+.track-edit-fields input:focus {
+  outline: none;
+  border-color: #1db954;
+}
+
+.track-edit-error {
+  color: #ff6b6b;
+  font-size: 0.78rem;
+}
+
+.track-edit-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.track-edit-save,
+.track-edit-cancel {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.track-edit-save {
+  background: #1db954;
+  color: #000;
+}
+
+.track-edit-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+@media (max-width: 640px) {
+  .track-row--editing {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .track-edit-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
 }
 
 .play-badge {

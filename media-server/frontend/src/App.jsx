@@ -27,8 +27,10 @@ export default function App() {
     deletePlaylistById,
     renamePlaylist,
     addLocalTrack,
+    renameTrack,
     removeTrack,
     getPlaylistTracks,
+    cloudStatus,
   } = usePlaylists();
 
   const {
@@ -204,6 +206,7 @@ export default function App() {
         <AppHeader
           activePlaylistName={activePlaylist?.name || "My Playlist"}
           onOpenPlaylists={() => setShowPlaylistPicker(true)}
+          cloudStatus={cloudStatus}
         />
 
         {activeTab === "home" ? (
@@ -215,6 +218,7 @@ export default function App() {
             onOpenPlaylist={() => setShowPlaylistPicker(true)}
             onAddTrack={handleUploadMp3}
             onRemoveTrack={(trackId) => handleRemoveTrack(trackId, activePlaylistId)}
+            onRenameTrack={(trackId, fields) => renameTrack(trackId, fields, activePlaylistId)}
             isUploading={Boolean(uploadProgress)}
           />
         ) : null}
@@ -246,6 +250,7 @@ export default function App() {
             activePlaylistId={activePlaylistId}
             onSelectPlaylist={setActivePlaylistId}
             onRemoveTrack={handleRemoveTrack}
+            onRenameTrack={renameTrack}
             onUploadMp3={handleUploadMp3}
             onSelectTrack={(track, playlistId) => {
               const queue = getPlaylistTracks(playlistId);

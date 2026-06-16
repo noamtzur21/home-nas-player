@@ -1,5 +1,5 @@
 import AddMp3Button from "./AddMp3Button.jsx";
-import TrackArtwork from "./TrackArtwork.jsx";
+import TrackRow from "./TrackRow.jsx";
 import "./TrackList.css";
 
 export default function TrackList({
@@ -7,6 +7,7 @@ export default function TrackList({
   activeTrackId,
   onSelectTrack,
   onRemoveTrack,
+  onRenameTrack,
   onAddTrack,
   isUploading,
   title = "Songs",
@@ -25,38 +26,17 @@ export default function TrackList({
         <p className="track-panel-empty">No songs yet. Tap + to add an MP3.</p>
       ) : (
         <div className="track-list">
-          {tracks.map((track, index) => {
-            const isActive = track.id === activeTrackId;
-
-            return (
-              <div key={track.id} className={`track-row${isActive ? " active" : ""}`}>
-                <button type="button" className="track-clickable-area" onClick={() => onSelectTrack(track)}>
-                  <span className="track-index">{index + 1}</span>
-                  <TrackArtwork track={track} className="track-art" />
-                  <div className="track-meta">
-                    <strong>{track.title}</strong>
-                    <span>{track.artist}</span>
-                  </div>
-                </button>
-
-                <div className="track-actions">
-                  {onRemoveTrack ? (
-                    <button
-                      type="button"
-                      className="track-remove-btn"
-                      onClick={() => onRemoveTrack(track.id)}
-                      aria-label={`Remove ${track.title}`}
-                    >
-                      ✕
-                    </button>
-                  ) : null}
-                  <button type="button" className="play-badge" onClick={() => onSelectTrack(track)}>
-                    {isActive ? "Playing" : "Play"}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {tracks.map((track, index) => (
+            <TrackRow
+              key={track.id}
+              track={track}
+              index={index}
+              isActive={track.id === activeTrackId}
+              onSelectTrack={onSelectTrack}
+              onRemoveTrack={onRemoveTrack}
+              onRenameTrack={onRenameTrack}
+            />
+          ))}
         </div>
       )}
     </section>

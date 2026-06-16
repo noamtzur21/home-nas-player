@@ -1,6 +1,12 @@
 import "./AppHeader.css";
 
-export default function AppHeader({ activePlaylistName, onOpenPlaylists }) {
+const CLOUD_STATUS_LABEL = {
+  connecting: "Connecting…",
+  synced: "Backed up",
+  offline: "Offline (saved on device)",
+};
+
+export default function AppHeader({ activePlaylistName, onOpenPlaylists, cloudStatus }) {
   return (
     <header className="app-header">
       <div className="app-brand">
@@ -11,6 +17,11 @@ export default function AppHeader({ activePlaylistName, onOpenPlaylists }) {
           <p className="app-brand-eyebrow">Welcome back</p>
           <h1 className="app-brand-title">Noam Spotify</h1>
         </div>
+        {cloudStatus ? (
+          <span className={`cloud-status cloud-status--${cloudStatus}`} title="Cloud backup status">
+            {CLOUD_STATUS_LABEL[cloudStatus] || cloudStatus}
+          </span>
+        ) : null}
       </div>
 
       <button type="button" className="playlist-chip" onClick={onOpenPlaylists}>

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   deleteOfflineTrack,
+  getOfflineTrackBlob,
   hasOfflineTrack,
   saveTrackBlob,
   saveTrackArtwork,
@@ -9,6 +10,9 @@ import {
 import { DEFAULT_OFFLINE_ARTWORK } from "../utils/defaultArtwork";
 import { lookupTrackMetadata } from "../utils/trackMetadata";
 import { createSmoothProgress, saveTrackBlobWithProgress } from "../utils/uploadProgress";
+import { fetchCloudLibrary, saveCloudLibrary, uploadTrackAudio } from "../lib/cloudLibrary";
+
+const CLOUD_WRITE_DEBOUNCE_MS = 1500;
 
 const LIBRARY_KEY = "noam-spotify-library";
 const LEGACY_KEY = "media-server-playlist";
@@ -100,15 +104,66 @@ function saveLibrary(library) {
 export function usePlaylists() {
   const [library, setLibrary] = useState(loadLibrary);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [cloudStatus, setCloudStatus] = useState("connecting");
+  const cloudWriteTimeoutRef = useRef(null);
+
+  // Re-upload any locally-added MP3 that doesn't have a cloud backup yet
+  // (e.g. it was added before cloud sync existed, or a previous upload
+  // failed while offline). Runs quietly in the background.
+  const backfillCloudAudio = useCallback((currentLibrary) => {
+    currentLibrary.playlists.forEach((playlist) => {
+      playlist.tracks.forEach((track) => {
+        if (!track.isLocal || track.cloudAudioUrl) return;
+
+        getOfflineTrackBlob(track.id).then((blob) => {
+          if (!blob) return;
+          uploadTrackAudio(track.id, blob)
+            .then((cloudAudioUrl) => {
+              setLibrary((current) => ({
+                ...current,
+                playlists: current.playlists.map((p) =>
+                  p.id === playlist.id
+                    ? { ...p, tracks: p.tracks.map((t) => (t.id === track.id ? { ...t, cloudAudioUrl } : t)) }
+                    : p,
+                ),
+              }));
+            })
+            .catch((error) => console.warn(`[cloud-sync] backup failed for ${track.id}:`, error.message));
+        });
+      });
+    });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    syncLibraryOfflineFlags(library).then((synced) => {
+    async function init() {
+      let working = library;
+
+      try {
+        const cloud = await fetchCloudLibrary();
+        if (cancelled) return;
+
+        if (cloud?.playlists?.length) {
+          working = cloud;
+        } else {
+          await saveCloudLibrary(working);
+        }
+        setCloudStatus("synced");
+      } catch (error) {
+        console.warn("[cloud-sync] unavailable, continuing with the local library:", error.message);
+        setCloudStatus("offline");
+      }
+
+      const synced = await syncLibraryOfflineFlags(working);
       if (cancelled) return;
+
       setLibrary(synced);
       setIsSyncing(false);
-    });
+      backfillCloudAudio(synced);
+    }
+
+    init();
 
     return () => {
       cancelled = true;
@@ -118,6 +173,18 @@ export function usePlaylists() {
   useEffect(() => {
     if (isSyncing) return;
     saveLibrary(library);
+
+    if (cloudWriteTimeoutRef.current) clearTimeout(cloudWriteTimeoutRef.current);
+    cloudWriteTimeoutRef.current = setTimeout(() => {
+      saveCloudLibrary(library)
+        .then(() => setCloudStatus("synced"))
+        .catch((error) => {
+          console.warn("[cloud-sync] write failed:", error.message);
+          setCloudStatus("offline");
+        });
+    }, CLOUD_WRITE_DEBOUNCE_MS);
+
+    return () => clearTimeout(cloudWriteTimeoutRef.current);
   }, [library, isSyncing]);
 
   const activePlaylist = useMemo(
@@ -289,11 +356,58 @@ export function usePlaylists() {
         }));
 
         progress.set(100, "Done!");
+
+        // Back this song up to the cloud so it survives reinstalls/new
+        // phones. Runs in the background — playback already works locally.
+        uploadTrackAudio(id, file)
+          .then((cloudAudioUrl) => {
+            setLibrary((current) => ({
+              ...current,
+              playlists: current.playlists.map((playlist) =>
+                playlist.id === targetId
+                  ? { ...playlist, tracks: playlist.tracks.map((t) => (t.id === id ? { ...t, cloudAudioUrl } : t)) }
+                  : playlist,
+              ),
+            }));
+          })
+          .catch((error) => console.warn(`[cloud-sync] backup failed for ${id}:`, error.message));
+
         return { ok: true, track };
       } catch (error) {
         await deleteOfflineTrack(id);
         return { ok: false, error: error.message || "Upload failed" };
       }
+    },
+    [library.activePlaylistId],
+  );
+
+  const renameTrack = useCallback(
+    (trackId, { title, artist }, playlistId) => {
+      const targetId = playlistId || library.activePlaylistId;
+      const trimmedTitle = title?.trim();
+      const trimmedArtist = artist?.trim();
+
+      if (!trimmedTitle || !trimmedArtist) {
+        return { ok: false, error: "Title and artist are required." };
+      }
+
+      setLibrary((current) => ({
+        ...current,
+        playlists: current.playlists.map((playlist) =>
+          playlist.id === targetId
+            ? {
+                ...playlist,
+                tracks: playlist.tracks.map((track) =>
+                  track.id === trackId
+                    ? { ...track, title: trimmedTitle, artist: trimmedArtist, isManuallyNamed: true }
+                    : track,
+                ),
+              }
+            : playlist,
+        ),
+      }));
+
+      return { ok: true };
     },
     [library.activePlaylistId],
   );
@@ -328,8 +442,10 @@ export function usePlaylists() {
     renamePlaylist,
     addTrack,
     addLocalTrack,
+    renameTrack,
     removeTrack,
     getPlaylistTracks,
     updateActivePlaylist,
+    cloudStatus,
   };
 }
